@@ -78,7 +78,7 @@ const Login: React.FC = () => {
           </Form>
 
           <div style={{ textAlign: "center", marginTop: "20px", color: "white" }}>
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/register" style={{ color: "#75bd9d" }}>
               Register here
             </Link>

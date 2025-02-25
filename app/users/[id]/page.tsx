@@ -1,7 +1,3 @@
-// your code here for S2 to display a single user profile after having clicked on it
-// each user has their own slug /[id] (/1, /2, /3, ...) and is displayed using this file
-// try to leverage the component library from antd by utilizing "Card" to display the individual user
-// import { Card } from "antd"; // similar to /app/users/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { User } from "@/types/user";
-import { Button, Card, DatePicker, Form, Input, Modal, Tag, message, Descriptions } from "antd";
+import { Button, Card, DatePicker, Form, Input, Tag, message, Descriptions } from "antd";
 import { EditOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
