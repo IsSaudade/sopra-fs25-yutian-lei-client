@@ -1,45 +1,67 @@
-"use client";
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import { ConfigProvider, theme } from "antd";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
+import "@/styles/globals.css";
+import { Providers } from "./providers";
 
-import React, { ReactNode } from "react";
-import { Layout, Spin } from "antd";
-import Navbar from "./Navbar";
-import { useAuth } from "@/context/AuthContext";
+const geistSans = Geist({
+    variable: "--font-geist-sans",
+    subsets: ["latin"],
+});
 
-const { Content, Footer } = Layout;
+const geistMono = Geist_Mono({
+    variable: "--font-geist-mono",
+    subsets: ["latin"],
+});
 
-interface PageLayoutProps {
-    children: ReactNode;
-    requireAuth?: boolean;
-}
-
-const PageLayout: React.FC<PageLayoutProps> = ({ children, requireAuth = false }) => {
-    const { loading } = useAuth();
-
-    // Show loading state while checking authentication
-    if (requireAuth && loading) {
-        return (
-            <div style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "100vh"
-            }}>
-                <Spin size="large" tip="Loading..." />
-            </div>
-        );
-    }
-
-    return (
-        <Layout style={{ minHeight: "100vh" }}>
-            <Navbar />
-            <Content style={{ padding: "0 50px", marginTop: 64 }}>
-                {children}
-            </Content>
-            <Footer style={{ textAlign: "center", background: "#001529", color: "white" }}>
-                SoPra FS25 ©{new Date().getFullYear()} Created for Software Praktikum
-            </Footer>
-        </Layout>
-    );
+export const metadata: Metadata = {
+    title: "SoPra FS25 User Management",
+    description: "sopra-fs25-template-client",
 };
 
-export default PageLayout;
+export default function RootLayout({
+                                       children,
+                                   }: Readonly<{
+    children: React.ReactNode;
+}>) {
+    return (
+        <html lang="en">
+        <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <ConfigProvider
+            theme={{
+                algorithm: theme.defaultAlgorithm,
+                token: {
+                    colorPrimary: "#22426b",
+                    borderRadius: 8,
+                    colorText: "#fff",
+                    fontSize: 16,
+                    colorBgContainer: "#16181D",
+                },
+                components: {
+                    Button: {
+                        colorPrimary: "#75bd9d",
+                        algorithm: true,
+                        controlHeight: 38,
+                    },
+                    Input: {
+                        colorBorder: "gray",
+                        colorTextPlaceholder: "#888888",
+                        algorithm: false,
+                    },
+                    Form: {
+                        labelColor: "#fff",
+                        algorithm: theme.defaultAlgorithm,
+                    },
+                    Card: {},
+                },
+            }}
+        >
+            <AntdRegistry>
+                <Providers>{children}</Providers>
+            </AntdRegistry>
+        </ConfigProvider>
+        </body>
+        </html>
+    );
+}
