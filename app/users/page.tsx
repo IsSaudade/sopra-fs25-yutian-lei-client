@@ -101,34 +101,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-return (
-    <ProtectedRoute>
-      <PageLayout requireAuth>
-        <div className="card-container">
-          <Card
-              title="All Users"
-              loading={loading}
-              className="dashboard-container"
-              style={{ width: "80%", maxWidth: "900px", margin: "40px auto" }}
-          >
-            {users ? (
-                <Table<User>
-                    columns={columns}
-                    dataSource={users}
-                    rowKey="id"
-                    onRow={(row) => ({
-                      onClick: () => router.push(`/users/${row.id}`),
-                      style: { cursor: "pointer" },
-                    })}
-                />
-            ) : (
-                <Spin tip="Loading users..." />
-            )}
-          </Card>
-        </div>
-      </PageLayout>
-    </ProtectedRoute>
-);
-};
-
 export default Dashboard;
