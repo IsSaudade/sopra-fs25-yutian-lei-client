@@ -13,7 +13,7 @@ interface PageLayoutProps {
 }
 
 const PageLayout: React.FC<PageLayoutProps> = ({ children, requireAuth = false }) => {
-    const { loading, user } = useAuth();
+    const { loading } = useAuth();
 
     // Show loading state while checking authentication
     if (requireAuth && loading) {
