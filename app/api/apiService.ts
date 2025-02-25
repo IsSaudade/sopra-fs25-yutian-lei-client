@@ -74,7 +74,15 @@ export class ApiService {
 
     return headers;
   }
+  private getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
 
+    if (this.currentUserId) {
+      headers["CurrentUserId"] = this.currentUserId;
+    }
+
+    return headers;
+  }
   /**
    * GET request.
    * @param endpoint - The API endpoint (e.g. "/users").
