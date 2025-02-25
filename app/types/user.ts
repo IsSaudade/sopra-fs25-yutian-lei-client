@@ -1,9 +1,10 @@
 export interface User {
-  id: string | null;
-  name: string | null;
-  username: string | null;
-  token: string | null;
-  status: string | null;
-  creationDate: Date | null;
-  birthday?: Date | null;
+  id: string;
+  name: string;
+  username: string;
+  token: string;
+  status: string;
+  creationDate: string | Date;
+  birthday?: string | Date | null;
+  password?: string;
 }

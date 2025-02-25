@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ConfigProvider, theme } from "antd";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import "@/styles/globals.css";
+import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,14 +21,14 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
+                                     children,
+                                   }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+      <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ConfigProvider
+      <ConfigProvider
           theme={{
             algorithm: theme.defaultAlgorithm,
             token: {
@@ -59,10 +60,12 @@ export default function RootLayout({
               Card: {},
             },
           }}
-        >
-          <AntdRegistry>{children}</AntdRegistry>
-        </ConfigProvider>
+      >
+        <AntdRegistry>
+          <Providers>{children}</Providers>
+        </AntdRegistry>
+      </ConfigProvider>
       </body>
-    </html>
+      </html>
   );
 }

@@ -2,10 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useApi } from "@/hooks/useApi";
-import useLocalStorage from "@/hooks/useLocalStorage";
-import { User } from "@/types/user";
 import { Button, Form, Input, DatePicker, message } from "antd";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
 
 interface FormFieldProps {
     username: string;
@@ -16,23 +15,21 @@ interface FormFieldProps {
 
 const Register: React.FC = () => {
     const router = useRouter();
-    const apiService = useApi();
     const [form] = Form.useForm();
-    const { set: setToken } = useLocalStorage<string>("token", "");
+    const { register, user, loading } = useAuth();
+
+    // If user is already logged in, redirect to users page
+    useEffect(() => {
+        if (user && !loading) {
+            router.push("/users");
+        }
+    }, [user, loading, router]);
 
     const handleRegister = async (values: FormFieldProps) => {
         try {
-            // Call the API service to register user
-            const response = await apiService.post<User>("/users", values);
-
-            // Store the token if available
-            if (response.token) {
-                setToken(response.token);
-                message.success("Registration successful!");
-            }
-
-            // Navigate to the user overview
-            router.push("/users");
+            await register(values);
+            message.success("Registration successful!");
+            // Navigation is handled in the auth context
         } catch (error) {
             if (error instanceof Error) {
                 message.error(`Registration failed: ${error.message}`);

@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
-import useLocalStorage from "@/hooks/useLocalStorage";
+import { useAuth } from "@/context/AuthContext";
 import { User } from "@/types/user";
-import { Button, Card, Table, Tag, message } from "antd";
+import { Button, Card, Table, Tag, message, Spin } from "antd";
 import type { TableProps } from "antd";
 
 // Columns for the antd table of User objects
@@ -46,17 +46,12 @@ const Dashboard: React.FC = () => {
   const apiService = useApi();
   const [users, setUsers] = useState<User[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const { value: token, clear: clearToken } = useLocalStorage<string>("token", "");
+  const { user: currentUser, logout } = useAuth();
 
   const handleLogout = async (): Promise<void> => {
     try {
-      // TODO: Call logout API if implemented
-      // await apiService.post(`/logout/${currentUser.id}`, {});
-
-      // Clear token
-      clearToken();
+      await logout();
       message.success("Logged out successfully!");
-      router.push("/login");
     } catch (error) {
       if (error instanceof Error) {
         message.error(`Logout failed: ${error.message}`);
@@ -67,12 +62,6 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    // Redirect to login if no token
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
     const fetchUsers = async () => {
       try {
         setLoading(true);
@@ -85,18 +74,13 @@ const Dashboard: React.FC = () => {
         } else {
           console.error("An unknown error occurred while fetching users.");
         }
-        // Redirect to login if unauthorized
-        if (error instanceof Error && error.message.includes("401")) {
-          clearToken();
-          router.push("/login");
-        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchUsers();
-  }, [apiService, router, token, clearToken]);
+  }, [apiService]);
 
   return (
       <div className="card-container">

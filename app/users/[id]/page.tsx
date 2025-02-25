@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
-import useLocalStorage from "@/hooks/useLocalStorage";
+import { useAuth } from "@/context/AuthContext";
 import { User } from "@/types/user";
-import { Button, Card, DatePicker, Form, Input, Tag, message, Descriptions } from "antd";
+import { Button, Card, DatePicker, Form, Input, Tag, message, Descriptions, Spin } from "antd";
 import { EditOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -14,23 +14,17 @@ export default function UserPage() {
   const userId = params.id as string;
   const router = useRouter();
   const apiService = useApi();
+  const { user: currentUser, refreshUser } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [form] = Form.useForm();
-  const { value: token, clear: clearToken } = useLocalStorage<string>("token", "");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is logged in
-    if (!token) {
-      router.push("/login");
+    if (!currentUser) {
+      // Auth context will handle redirection if needed
       return;
     }
-
-    // Extract current user ID from token if needed
-    // For this example, we're mocking it with the ID 1
-    setCurrentUserId("1");
 
     const fetchUser = async () => {
       try {
@@ -40,7 +34,7 @@ export default function UserPage() {
         // Initialize form with user data
         form.setFieldsValue({
           username: data.username,
-          birthday: data.birthday ? dayjs(data.birthday) : undefined,
+          birthday: data.birthday ? dayjs(new Date(data.birthday)) : undefined,
         });
       } catch (error) {
         if (error instanceof Error) {
@@ -57,7 +51,7 @@ export default function UserPage() {
     };
 
     fetchUser();
-  }, [userId, apiService, router, token, form, clearToken]);
+  }, [userId, apiService, router, currentUser, form]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -83,6 +77,11 @@ export default function UserPage() {
       const updatedUser = await apiService.get<User>(`/users/${userId}`);
       setUser(updatedUser);
 
+      // Refresh current user if this is our own profile
+      if (currentUser?.id === userId) {
+        refreshUser();
+      }
+
       setIsEditing(false);
     } catch (error) {
       if (error instanceof Error) {
@@ -98,7 +97,8 @@ export default function UserPage() {
     router.push("/users");
   };
 
-  const canEdit = currentUserId === userId;
+  // Only allow editing if this is our own profile
+  const canEdit = currentUser?.id === userId;
 
   return (
       <div className="card-container">

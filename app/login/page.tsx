@@ -2,10 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useApi } from "@/hooks/useApi";
-import useLocalStorage from "@/hooks/useLocalStorage";
-import { User } from "@/types/user";
 import { Button, Form, Input, message } from "antd";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
 
 interface FormFieldProps {
   username: string;
@@ -14,23 +13,21 @@ interface FormFieldProps {
 
 const Login: React.FC = () => {
   const router = useRouter();
-  const apiService = useApi();
   const [form] = Form.useForm();
-  const { set: setToken } = useLocalStorage<string>("token", "");
+  const { login, user, loading } = useAuth();
+
+  // If user is already logged in, redirect to users page
+  useEffect(() => {
+    if (user && !loading) {
+      router.push("/users");
+    }
+  }, [user, loading, router]);
 
   const handleLogin = async (values: FormFieldProps) => {
     try {
-      // Call the API service to login
-      const response = await apiService.post<User>("/login", values);
-
-      // Store the token
-      if (response.token) {
-        setToken(response.token);
-        message.success("Login successful!");
-      }
-
-      // Navigate to the user overview
-      router.push("/users");
+      await login(values.username, values.password);
+      message.success("Login successful!");
+      // Navigation is handled in the auth context
     } catch (error) {
       if (error instanceof Error) {
         message.error(`Login failed: ${error.message}`);
