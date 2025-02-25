@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/context/AuthContext";
 import { User } from "@/types/user";
-import { Button, Card, DatePicker, Form, Input, Tag, message, Descriptions, Spin } from "antd";
-import { EditOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import { Button, Card, DatePicker, Form, Input, Tag, message, Descriptions, Spin, Alert } from "antd";
+import { EditOutlined, ArrowLeftOutlined, LockOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import PageLayout from "@/components/PageLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -20,6 +20,7 @@ export default function UserPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function UserPage() {
     const fetchUser = async () => {
       try {
         setLoading(true);
+        setError(null);
         const data: User = await apiService.get<User>(`/users/${userId}`);
         setUser(data);
         // Initialize form with user data
@@ -39,13 +41,17 @@ export default function UserPage() {
         });
       } catch (error) {
         if (error instanceof Error) {
+          setError(`Failed to load user: ${error.message}`);
           message.error(`Failed to load user: ${error.message}`);
         } else {
+          setError("Failed to load user profile.");
           console.error("An unknown error occurred while fetching user.");
           message.error("Failed to load user profile.");
         }
-        // Redirect to user list if profile cannot be loaded
-        router.push("/users");
+        // Don't redirect immediately, allow user to see the error
+        setTimeout(() => {
+          router.push("/users");
+        }, 3000);
       } finally {
         setLoading(false);
       }
@@ -55,6 +61,10 @@ export default function UserPage() {
   }, [userId, apiService, router, currentUser, form]);
 
   const handleEdit = () => {
+    if (!canEdit) {
+      message.error("You can only edit your own profile");
+      return;
+    }
     setIsEditing(true);
   };
 
@@ -80,13 +90,23 @@ export default function UserPage() {
 
       // Refresh current user if this is our own profile
       if (currentUser?.id === userId) {
-        refreshUser();
+        await refreshUser();
       }
 
       setIsEditing(false);
     } catch (error) {
       if (error instanceof Error) {
         message.error(`Failed to update profile: ${error.message}`);
+
+        // Check if username already exists
+        if (error.message.includes("username") && error.message.includes("exists")) {
+          form.setFields([
+            {
+              name: 'username',
+              errors: ['This username is already taken']
+            }
+          ]);
+        }
       } else {
         console.error("An unknown error occurred while updating profile.");
         message.error("Failed to update profile.");
@@ -139,13 +159,31 @@ export default function UserPage() {
                 loading={loading}
                 style={{ width: "80%", maxWidth: "600px", margin: "0 auto", background: "#2e4b99" }}
                 extra={
-                  canEdit && !isEditing ? (
-                      <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
-                        Edit Profile
-                      </Button>
-                  ) : null
+                    user && (
+                        canEdit ? (
+                            !isEditing && (
+                                <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
+                                  Edit Profile
+                                </Button>
+                            )
+                        ) : (
+                            <Button disabled icon={<LockOutlined />} style={{ cursor: "not-allowed" }}>
+                              View Only
+                            </Button>
+                        )
+                    )
                 }
             >
+              {error && (
+                  <Alert
+                      message="Error"
+                      description={error}
+                      type="error"
+                      showIcon
+                      style={{ marginBottom: "16px" }}
+                  />
+              )}
+
               {user && !isEditing ? (
                   <Descriptions
                       bordered
@@ -188,7 +226,7 @@ export default function UserPage() {
 
                     <Form.Item
                         name="birthday"
-                        label="Birthday"
+                        label="Birthday (Optional)"
                     >
                       <DatePicker style={{ width: "100%" }} />
                     </Form.Item>
@@ -200,7 +238,7 @@ export default function UserPage() {
                       </div>
                     </Form.Item>
                   </Form>
-              ) : (
+              ) : !error && (
                   <Spin tip="Loading user profile..." />
               )}
             </Card>

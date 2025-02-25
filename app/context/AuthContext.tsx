@@ -19,7 +19,6 @@ interface RegisterData {
     username: string;
     name: string;
     password: string;
-    birthday?: Date;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -104,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         } catch (error) {
             console.error("Registration error:", error);
+            // 向上传递错误，让组件处理
             throw error;
         } finally {
             setLoading(false);
@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const refreshUser = async () => {
-        fetchCurrentUser();
+        return fetchCurrentUser();
     };
 
     return (
