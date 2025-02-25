@@ -4,7 +4,7 @@ import { ApplicationError } from "@/types/error";
 export class ApiService {
   private baseURL: string;
   private defaultHeaders: HeadersInit;
-  private currentUserId: string | null = null;
+  private currentUserId?: string;
 
   constructor() {
     this.baseURL = getApiDomain();
@@ -16,9 +16,25 @@ export class ApiService {
 
   /**
    * Set the current user ID for authenticated requests
+   * @param userId - The ID of the current user
    */
-  public setCurrentUserId(userId: string | null): void {
+  public setCurrentUserId(userId: string): void {
     this.currentUserId = userId;
+  }
+
+  /**
+   * Get headers with optional user ID
+   * @returns Headers with potential user ID
+   */
+  private getHeaders(): HeadersInit {
+    const headers: HeadersInit = { ...this.defaultHeaders };
+
+    if (this.currentUserId) {
+      // TypeScript-safe way to add CurrentUserId header
+      (headers as Record<string, string>)["CurrentUserId"] = this.currentUserId;
+    }
+
+    return headers;
   }
 
   /**
@@ -62,28 +78,6 @@ export class ApiService {
   }
 
   /**
-   * Get authentication headers
-   */
-  private getAuthHeaders(): HeadersInit {
-    const headers = { ...this.defaultHeaders };
-
-    // Add CurrentUserId header for authenticated requests
-    if (this.currentUserId) {
-      headers["CurrentUserId"] = this.currentUserId;
-    }
-
-    return headers;
-  }
-  private getHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {};
-
-    if (this.currentUserId) {
-      headers["CurrentUserId"] = this.currentUserId;
-    }
-
-    return headers;
-  }
-  /**
    * GET request.
    * @param endpoint - The API endpoint (e.g. "/users").
    * @returns JSON data of type T.
@@ -92,7 +86,7 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "GET",
-      headers: this.getAuthHeaders(),
+      headers: this.getHeaders(),
     });
     return this.processResponse<T>(
         res,
@@ -110,7 +104,7 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "POST",
-      headers: this.getAuthHeaders(),
+      headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
     return this.processResponse<T>(
@@ -129,7 +123,7 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "PUT",
-      headers: this.getAuthHeaders(),
+      headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
     return this.processResponse<T>(
@@ -147,7 +141,7 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "DELETE",
-      headers: this.getAuthHeaders(),
+      headers: this.getHeaders(),
     });
     return this.processResponse<T>(
         res,
