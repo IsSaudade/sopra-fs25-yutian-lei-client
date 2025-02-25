@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
-import { useAuth } from "@/context/AuthContext";
 import { User } from "@/types/user";
 import { Card, Table, Tag, message, Spin } from "antd";
 import type { TableProps } from "antd";
@@ -48,7 +47,6 @@ const Dashboard: React.FC = () => {
   const apiService = useApi();
   const [users, setUsers] = useState<User[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchUsers = async () => {
