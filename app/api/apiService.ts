@@ -4,6 +4,7 @@ import { ApplicationError } from "@/types/error";
 export class ApiService {
   private baseURL: string;
   private defaultHeaders: HeadersInit;
+  private currentUserId: string | null = null;
 
   constructor() {
     this.baseURL = getApiDomain();
@@ -11,6 +12,13 @@ export class ApiService {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
     };
+  }
+
+  /**
+   * Set the current user ID for authenticated requests
+   */
+  public setCurrentUserId(userId: string | null): void {
+    this.currentUserId = userId;
   }
 
   /**
@@ -23,8 +31,8 @@ export class ApiService {
    * @throws ApplicationError if res.ok is false.
    */
   private async processResponse<T>(
-    res: Response,
-    errorMessage: string,
+      res: Response,
+      errorMessage: string,
   ): Promise<T> {
     if (!res.ok) {
       let errorDetail = res.statusText;
@@ -40,17 +48,31 @@ export class ApiService {
       }
       const detailedMessage = `${errorMessage} (${res.status}: ${errorDetail})`;
       const error: ApplicationError = new Error(
-        detailedMessage,
+          detailedMessage,
       ) as ApplicationError;
       error.info = JSON.stringify(
-        { status: res.status, statusText: res.statusText },
-        null,
-        2,
+          { status: res.status, statusText: res.statusText },
+          null,
+          2,
       );
       error.status = res.status;
       throw error;
     }
     return res.json() as Promise<T>;
+  }
+
+  /**
+   * Get authentication headers
+   */
+  private getAuthHeaders(): HeadersInit {
+    const headers = { ...this.defaultHeaders };
+
+    // Add CurrentUserId header for authenticated requests
+    if (this.currentUserId) {
+      headers["CurrentUserId"] = this.currentUserId;
+    }
+
+    return headers;
   }
 
   /**
@@ -62,11 +84,11 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "GET",
-      headers: this.defaultHeaders,
+      headers: this.getAuthHeaders(),
     });
     return this.processResponse<T>(
-      res,
-      "An error occurred while fetching the data.\n",
+        res,
+        "An error occurred while fetching the data.\n",
     );
   }
 
@@ -80,12 +102,12 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "POST",
-      headers: this.defaultHeaders,
+      headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
     });
     return this.processResponse<T>(
-      res,
-      "An error occurred while posting the data.\n",
+        res,
+        "An error occurred while posting the data.\n",
     );
   }
 
@@ -99,12 +121,12 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "PUT",
-      headers: this.defaultHeaders,
+      headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
     });
     return this.processResponse<T>(
-      res,
-      "An error occurred while updating the data.\n",
+        res,
+        "An error occurred while updating the data.\n",
     );
   }
 
@@ -117,11 +139,11 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "DELETE",
-      headers: this.defaultHeaders,
+      headers: this.getAuthHeaders(),
     });
     return this.processResponse<T>(
-      res,
-      "An error occurred while deleting the data.\n",
+        res,
+        "An error occurred while deleting the data.\n",
     );
   }
 }

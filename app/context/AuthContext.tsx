@@ -31,6 +31,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const apiService = useApi();
 
+    // Update API service with current user ID whenever user changes
+    useEffect(() => {
+        if (user && user.id) {
+            apiService.setCurrentUserId(user.id);
+        } else {
+            apiService.setCurrentUserId(null);
+        }
+    }, [apiService, user]);
+
     const fetchCurrentUser = async () => {
         if (!token) {
             setUser(null);
