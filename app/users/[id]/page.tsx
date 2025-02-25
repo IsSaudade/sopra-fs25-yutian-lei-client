@@ -8,6 +8,8 @@ import { User } from "@/types/user";
 import { Button, Card, DatePicker, Form, Input, Tag, message, Descriptions, Spin } from "antd";
 import { EditOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import PageLayout from "@/components/PageLayout";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function UserPage() {
   const params = useParams();
@@ -101,78 +103,84 @@ export default function UserPage() {
   const canEdit = currentUser?.id === userId;
 
   return (
-      <div className="card-container">
-        <Card
-            title={
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <Button
-                    icon={<ArrowLeftOutlined />}
-                    onClick={navigateBack}
-                    type="text"
-                    style={{ marginRight: "10px" }}
-                />
-                User Profile
-              </div>
-            }
-            loading={loading}
-            style={{ width: "80%", maxWidth: "600px" }}
-            extra={
-              canEdit && !isEditing ? (
-                  <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
-                    Edit Profile
-                  </Button>
-              ) : null
-            }
-        >
-          {user && !isEditing ? (
-              <Descriptions bordered column={1}>
-                <Descriptions.Item label="Username">{user.username}</Descriptions.Item>
-                <Descriptions.Item label="Name">{user.name}</Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag color={user.status === "ONLINE" ? "green" : "red"}>
-                    {user.status}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Creation Date">
-                  {user.creationDate ? new Date(user.creationDate).toLocaleDateString() : "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Birthday">
-                  {user.birthday ? new Date(user.birthday).toLocaleDateString() : "Not set"}
-                </Descriptions.Item>
-              </Descriptions>
-          ) : user && isEditing ? (
-              <Form
-                  form={form}
-                  layout="vertical"
-                  initialValues={{
-                    username: user.username,
-                    birthday: user.birthday ? dayjs(user.birthday) : undefined,
-                  }}
-              >
-                <Form.Item
-                    name="username"
-                    label="Username"
-                    rules={[{ required: true, message: "Please enter a username" }]}
-                >
-                  <Input />
-                </Form.Item>
-
-                <Form.Item
-                    name="birthday"
-                    label="Birthday"
-                >
-                  <DatePicker style={{ width: "100%" }} />
-                </Form.Item>
-
-                <Form.Item>
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                    <Button onClick={handleCancel}>Cancel</Button>
-                    <Button type="primary" onClick={handleSave}>Save</Button>
+      <ProtectedRoute>
+        <PageLayout requireAuth>
+          <div className="card-container" style={{ padding: "40px 0" }}>
+            <Card
+                title={
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <Button
+                        icon={<ArrowLeftOutlined />}
+                        onClick={navigateBack}
+                        type="text"
+                        style={{ marginRight: "10px" }}
+                    />
+                    User Profile
                   </div>
-                </Form.Item>
-              </Form>
-          ) : null}
-        </Card>
-      </div>
+                }
+                loading={loading}
+                style={{ width: "80%", maxWidth: "600px", margin: "0 auto" }}
+                extra={
+                  canEdit && !isEditing ? (
+                      <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
+                        Edit Profile
+                      </Button>
+                  ) : null
+                }
+            >
+              {user && !isEditing ? (
+                  <Descriptions bordered column={1}>
+                    <Descriptions.Item label="Username">{user.username}</Descriptions.Item>
+                    <Descriptions.Item label="Name">{user.name}</Descriptions.Item>
+                    <Descriptions.Item label="Status">
+                      <Tag color={user.status === "ONLINE" ? "green" : "red"}>
+                        {user.status}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Creation Date">
+                      {user.creationDate ? new Date(user.creationDate).toLocaleDateString() : "N/A"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Birthday">
+                      {user.birthday ? new Date(user.birthday).toLocaleDateString() : "Not set"}
+                    </Descriptions.Item>
+                  </Descriptions>
+              ) : user && isEditing ? (
+                  <Form
+                      form={form}
+                      layout="vertical"
+                      initialValues={{
+                        username: user.username,
+                        birthday: user.birthday ? dayjs(user.birthday) : undefined,
+                      }}
+                  >
+                    <Form.Item
+                        name="username"
+                        label="Username"
+                        rules={[{ required: true, message: "Please enter a username" }]}
+                    >
+                      <Input />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="birthday"
+                        label="Birthday"
+                    >
+                      <DatePicker style={{ width: "100%" }} />
+                    </Form.Item>
+
+                    <Form.Item>
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                        <Button onClick={handleCancel}>Cancel</Button>
+                        <Button type="primary" onClick={handleSave}>Save</Button>
+                      </div>
+                    </Form.Item>
+                  </Form>
+              ) : (
+                  <Spin tip="Loading user profile..." />
+              )}
+            </Card>
+          </div>
+        </PageLayout>
+      </ProtectedRoute>
   );
 }

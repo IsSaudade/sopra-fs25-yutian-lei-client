@@ -7,6 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { User } from "@/types/user";
 import { Button, Card, Table, Tag, message, Spin } from "antd";
 import type { TableProps } from "antd";
+import PageLayout from "@/components/PageLayout";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Columns for the antd table of User objects
 const columns: TableProps<User>["columns"] = [
@@ -48,19 +50,6 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const { user: currentUser, logout } = useAuth();
 
-  const handleLogout = async (): Promise<void> => {
-    try {
-      await logout();
-      message.success("Logged out successfully!");
-    } catch (error) {
-      if (error instanceof Error) {
-        message.error(`Logout failed: ${error.message}`);
-      } else {
-        console.error("An unknown error occurred during logout.");
-      }
-    }
-  };
-
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -83,32 +72,63 @@ const Dashboard: React.FC = () => {
   }, [apiService]);
 
   return (
-      <div className="card-container">
-        <Card
-            title="All Users"
-            loading={loading}
-            className="dashboard-container"
-            style={{ width: "80%", maxWidth: "900px" }}
-            extra={
-              <Button onClick={handleLogout} type="primary" danger>
-                Logout
-              </Button>
-            }
-        >
-          {users && (
-              <Table<User>
-                  columns={columns}
-                  dataSource={users}
-                  rowKey="id"
-                  onRow={(row) => ({
-                    onClick: () => router.push(`/users/${row.id}`),
-                    style: { cursor: "pointer" },
-                  })}
-              />
-          )}
-        </Card>
-      </div>
+      <ProtectedRoute>
+        <PageLayout requireAuth>
+          <div className="card-container">
+            <Card
+                title="All Users"
+                loading={loading}
+                className="dashboard-container"
+                style={{ width: "80%", maxWidth: "900px", margin: "40px auto" }}
+            >
+              {users ? (
+                  <Table<User>
+                      columns={columns}
+                      dataSource={users}
+                      rowKey="id"
+                      onRow={(row) => ({
+                        onClick: () => router.push(`/users/${row.id}`),
+                        style: { cursor: "pointer" },
+                      })}
+                  />
+              ) : (
+                  <Spin tip="Loading users..." />
+              )}
+            </Card>
+          </div>
+        </PageLayout>
+      </ProtectedRoute>
   );
+};
+
+return (
+    <ProtectedRoute>
+      <PageLayout requireAuth>
+        <div className="card-container">
+          <Card
+              title="All Users"
+              loading={loading}
+              className="dashboard-container"
+              style={{ width: "80%", maxWidth: "900px", margin: "40px auto" }}
+          >
+            {users ? (
+                <Table<User>
+                    columns={columns}
+                    dataSource={users}
+                    rowKey="id"
+                    onRow={(row) => ({
+                      onClick: () => router.push(`/users/${row.id}`),
+                      style: { cursor: "pointer" },
+                    })}
+                />
+            ) : (
+                <Spin tip="Loading users..." />
+            )}
+          </Card>
+        </div>
+      </PageLayout>
+    </ProtectedRoute>
+);
 };
 
 export default Dashboard;

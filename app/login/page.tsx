@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, Form, Input, message } from "antd";
+import { Button, Form, Input, message, Card } from "antd";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
+import PageLayout from "@/components/PageLayout";
 
 interface FormFieldProps {
   username: string;
@@ -39,49 +40,49 @@ const Login: React.FC = () => {
   };
 
   return (
-      <div className="login-container">
-        <div style={{ maxWidth: "400px", width: "100%", padding: "20px" }}>
-          <h1 style={{ color: "white", textAlign: "center", marginBottom: "24px" }}>Login</h1>
-
-          <Form
-              form={form}
-              name="login"
-              size="large"
-              variant="outlined"
-              onFinish={handleLogin}
-              layout="vertical"
-          >
-            <Form.Item
-                name="username"
-                label="Username"
-                rules={[{ required: true, message: "Please input your username!" }]}
+      <PageLayout>
+        <div className="login-container">
+          <Card title="Login" style={{ width: 400, borderRadius: "10px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
+            <Form
+                form={form}
+                name="login"
+                size="large"
+                variant="outlined"
+                onFinish={handleLogin}
+                layout="vertical"
             >
-              <Input placeholder="Enter username" />
-            </Form.Item>
+              <Form.Item
+                  name="username"
+                  label="Username"
+                  rules={[{ required: true, message: "Please input your username!" }]}
+              >
+                <Input placeholder="Enter username" />
+              </Form.Item>
 
-            <Form.Item
-                name="password"
-                label="Password"
-                rules={[{ required: true, message: "Please input your password!" }]}
-            >
-              <Input.Password placeholder="Enter password" />
-            </Form.Item>
+              <Form.Item
+                  name="password"
+                  label="Password"
+                  rules={[{ required: true, message: "Please input your password!" }]}
+              >
+                <Input.Password placeholder="Enter password" />
+              </Form.Item>
 
-            <Form.Item>
-              <Button type="primary" htmlType="submit" className="login-button">
-                Login
-              </Button>
-            </Form.Item>
-          </Form>
+              <Form.Item>
+                <Button type="primary" htmlType="submit" className="login-button" block loading={loading}>
+                  Login
+                </Button>
+              </Form.Item>
+            </Form>
 
-          <div style={{ textAlign: "center", marginTop: "20px", color: "white" }}>
-            Don&apos;t have an account?{" "}
-            <Link href="/register" style={{ color: "#75bd9d" }}>
-              Register here
-            </Link>
-          </div>
+            <div style={{ textAlign: "center", marginTop: "20px" }}>
+              Don&apos;t have an account?{" "}
+              <Link href="/register" style={{ color: "#75bd9d" }}>
+                Register here
+              </Link>
+            </div>
+          </Card>
         </div>
-      </div>
+      </PageLayout>
   );
 };
 
