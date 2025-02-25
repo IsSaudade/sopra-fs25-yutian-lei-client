@@ -24,7 +24,6 @@ export default function UserPage() {
 
   useEffect(() => {
     if (!currentUser) {
-      // Auth context will handle redirection if needed
       return;
     }
 
@@ -102,6 +101,25 @@ export default function UserPage() {
   // Only allow editing if this is our own profile
   const canEdit = currentUser?.id === userId;
 
+  // Custom styles for descriptions to ensure text is visible on dark backgrounds
+  const descriptionsStyle = {
+    // Style for the entire descriptions component
+    background: "#2e4b99", // slightly lighter blue background
+    borderRadius: "8px",
+    // Override label and content styles to ensure high contrast
+    ".ant-descriptions-item-label": {
+      color: "white !important", // Force white color for labels
+      background: "#1e3a8a !important", // Darker blue for labels
+      fontWeight: "bold",
+      padding: "12px 16px !important"
+    },
+    ".ant-descriptions-item-content": {
+      color: "white !important", // Force white color for content
+      background: "#2e4b99 !important", // Lighter blue for content
+      padding: "12px 16px !important"
+    }
+  };
+
   return (
       <ProtectedRoute>
         <PageLayout requireAuth>
@@ -119,7 +137,7 @@ export default function UserPage() {
                   </div>
                 }
                 loading={loading}
-                style={{ width: "80%", maxWidth: "600px", margin: "0 auto" }}
+                style={{ width: "80%", maxWidth: "600px", margin: "0 auto", background: "#2e4b99" }}
                 extra={
                   canEdit && !isEditing ? (
                       <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
@@ -129,7 +147,13 @@ export default function UserPage() {
                 }
             >
               {user && !isEditing ? (
-                  <Descriptions bordered column={1}>
+                  <Descriptions
+                      bordered
+                      column={1}
+                      style={descriptionsStyle}
+                      labelStyle={{ color: "white" }}
+                      contentStyle={{ color: "white" }}
+                  >
                     <Descriptions.Item label="Username">{user.username}</Descriptions.Item>
                     <Descriptions.Item label="Name">{user.name}</Descriptions.Item>
                     <Descriptions.Item label="Status">
@@ -152,6 +176,7 @@ export default function UserPage() {
                         username: user.username,
                         birthday: user.birthday ? dayjs(user.birthday) : undefined,
                       }}
+                      style={{ color: "white" }}
                   >
                     <Form.Item
                         name="username"
