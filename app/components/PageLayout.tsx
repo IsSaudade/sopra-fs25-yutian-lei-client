@@ -2,7 +2,7 @@
 
 import React, { ReactNode } from "react";
 import { Layout, Spin } from "antd";
-import Navbar from "./Navbar";
+import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 
 const { Content, Footer } = Layout;
