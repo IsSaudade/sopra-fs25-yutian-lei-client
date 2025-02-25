@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, Form, Input, DatePicker, message, Card, Alert } from "antd";
+import { Button, Form, Input, message, Card, Alert } from "antd";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import PageLayout from "@/components/PageLayout";
@@ -106,7 +106,6 @@ const Register: React.FC = () => {
                             <Input.Password placeholder="Enter password" />
                         </Form.Item>
 
-                        {/* 移除生日字段，因为生日只能在profile页面设置 */}
 
                         <Form.Item>
                             <Button type="primary" htmlType="submit" className="login-button" block loading={loading}>
