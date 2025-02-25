@@ -11,8 +11,15 @@ interface AuthContextType {
     loading: boolean;
     login: (username: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
-    register: (userData: any) => Promise<void>;
+    register: (userData: RegisterData) => Promise<void>;
     refreshUser: () => Promise<void>;
+}
+
+interface RegisterData {
+    username: string;
+    name: string;
+    password: string;
+    birthday?: Date;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Initialize on mount
     useEffect(() => {
         fetchCurrentUser();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]); // Re-run when token changes
 
     // Check for protected routes
@@ -85,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const register = async (userData: any) => {
+    const register = async (userData: RegisterData) => {
         setLoading(true);
         try {
             const response = await apiService.post<User>("/users", userData);
