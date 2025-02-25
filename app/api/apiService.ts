@@ -4,7 +4,7 @@ import { ApplicationError } from "@/types/error";
 export class ApiService {
   private baseURL: string;
   private defaultHeaders: HeadersInit;
-  private currentUserId?: string;
+  private currentUserId?: string | null;
 
   constructor() {
     this.baseURL = getApiDomain();
@@ -16,9 +16,9 @@ export class ApiService {
 
   /**
    * Set the current user ID for authenticated requests
-   * @param userId - The ID of the current user
+   * @param userId - The ID of the current user or null to clear
    */
-  public setCurrentUserId(userId: string): void {
+  public setCurrentUserId(userId: string | null): void {
     this.currentUserId = userId;
   }
 
