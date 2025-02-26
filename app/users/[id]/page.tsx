@@ -23,6 +23,12 @@ export default function UserPage() {
   const [error, setError] = useState<string | null>(null);
   const [form] = Form.useForm();
 
+  // Debug output
+  useEffect(() => {
+    console.log("Current user ID:", currentUser?.id, "Profile user ID:", userId);
+    console.log("Can edit?", String(currentUser?.id) === String(userId));
+  }, [currentUser, userId]);
+
   useEffect(() => {
     if (!currentUser) {
       return;
@@ -34,6 +40,8 @@ export default function UserPage() {
         setError(null);
         const data: User = await apiService.get<User>(`/users/${userId}`);
         setUser(data);
+        console.log("Fetched user data:", data);
+
         // Initialize form with user data
         form.setFieldsValue({
           username: data.username,
@@ -76,7 +84,12 @@ export default function UserPage() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      console.log("Submitting form values:", values);
 
+      // Ensure the current user ID is set correctly
+      apiService.setCurrentUserId(String(currentUser?.id));
+
+      // Make PUT request to update user
       await apiService.put(`/users/${userId}`, {
         username: values.username,
         birthday: values.birthday ? values.birthday.toDate() : null,
@@ -93,14 +106,15 @@ export default function UserPage() {
         await refreshUser();
       }
 
-      // Redirect to the profile page with updated data
+      // Exit edit mode
       setIsEditing(false);
 
-      // This ensures we see the updated profile view after saving changes
-      router.refresh();
+      // Hard redirect to the same page to ensure we see the updated data
+      router.push(`/users/${userId}?refresh=${Date.now()}`);
     } catch (error) {
       if (error instanceof Error) {
         message.error(`Failed to update profile: ${error.message}`);
+        console.error("Update profile error:", error);
 
         // Check if username already exists
         if (error.message.includes("username") && error.message.includes("exists")) {

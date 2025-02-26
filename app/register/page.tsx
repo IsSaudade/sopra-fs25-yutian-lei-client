@@ -35,32 +35,19 @@ const Register: React.FC = () => {
             // Navigation is handled in the auth context
         } catch (error) {
             if (error instanceof Error) {
-                // Extract specific error messages
+                // Display error message
                 const errorMsg = error.message;
-                setError(errorMsg);
+                message.error(`Registration failed: ${errorMsg}`);
 
-                // Check if username is already taken
-                if (errorMsg.includes("username") && errorMsg.includes("taken")) {
-                    form.setFields([
-                        {
-                            name: 'username',
-                            errors: ['This username is already taken']
-                        }
-                    ]);
-                } else {
-                    message.error(`Registration failed: ${errorMsg}`);
-                }
-
-                // Redirect back to the register page (reload the page)
-                router.refresh(); // Refresh the current page
-                // Alternative: router.push('/register');
+                // Completely redirect to a new register page
+                // Adding a timestamp to force a fresh page load
+                router.push(`/register?refresh=${Date.now()}`);
             } else {
                 console.error("An unknown error occurred during registration.");
-                setError("Registration failed due to an unknown error.");
                 message.error("Registration failed due to an unknown error.");
 
-                // Redirect back to register page
-                router.refresh();
+                // Redirect to a new register page
+                router.push(`/register?refresh=${Date.now()}`);
             }
         }
     };

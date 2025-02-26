@@ -20,6 +20,7 @@ export class ApiService {
    */
   public setCurrentUserId(userId: string | null): void {
     this.currentUserId = userId;
+    console.log("ApiService - setting currentUserId:", userId);
   }
 
   /**
@@ -33,18 +34,19 @@ export class ApiService {
       // TypeScript-safe way to add CurrentUserId header
       // Make sure the ID is sent as a string, even if it's stored as a number
       (headers as Record<string, string>)["CurrentUserId"] = String(this.currentUserId);
+      console.log("Request headers with CurrentUserId:", this.currentUserId);
     }
 
     return headers;
   }
 
   /**
-   * Helper function to check the response, parse JSON,
+   * Helper function to check the response, parse JSON if content exists,
    * and throw an error if the response is not OK.
    *
    * @param res - The response from fetch.
    * @param errorMessage - A descriptive error message for this call.
-   * @returns Parsed JSON data.
+   * @returns Parsed JSON data or empty object for 204 responses.
    * @throws ApplicationError if res.ok is false.
    */
   private async processResponse<T>(
@@ -54,11 +56,14 @@ export class ApiService {
     if (!res.ok) {
       let errorDetail = res.statusText;
       try {
-        const errorInfo = await res.json();
-        if (errorInfo?.message) {
-          errorDetail = errorInfo.message;
-        } else {
-          errorDetail = JSON.stringify(errorInfo);
+        // Only try to parse JSON if there's content
+        if (res.status !== 204 && res.headers.get("content-length") !== "0") {
+          const errorInfo = await res.json();
+          if (errorInfo?.message) {
+            errorDetail = errorInfo.message;
+          } else {
+            errorDetail = JSON.stringify(errorInfo);
+          }
         }
       } catch {
         // If parsing fails, keep using res.statusText
@@ -75,6 +80,13 @@ export class ApiService {
       error.status = res.status;
       throw error;
     }
+
+    // For 204 No Content responses, return an empty object
+    if (res.status === 204) {
+      return {} as T;
+    }
+
+    // Otherwise parse JSON
     return res.json() as Promise<T>;
   }
 
@@ -118,15 +130,24 @@ export class ApiService {
    * PUT request.
    * @param endpoint - The API endpoint (e.g. "/users/123").
    * @param data - The payload to update.
-   * @returns JSON data of type T.
+   * @returns JSON data of type T or empty object for 204 responses.
    */
   public async put<T>(endpoint: string, data: unknown): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log(`Making PUT request to ${url} with CurrentUserId: ${this.currentUserId}`);
+
     const res = await fetch(url, {
       method: "PUT",
       headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
+
+    // For 204 responses, we don't need to parse the body
+    if (res.status === 204) {
+      console.log("Received 204 No Content response, returning empty object");
+      return {} as T;
+    }
+
     return this.processResponse<T>(
         res,
         "An error occurred while updating the data.\n",
