@@ -89,11 +89,15 @@ export default function UserPage() {
       setUser(updatedUser);
 
       // Refresh current user if this is our own profile
-      if (currentUser?.id === userId) {
+      if (String(currentUser?.id) === String(userId)) {
         await refreshUser();
       }
 
+      // Redirect to the profile page with updated data
       setIsEditing(false);
+
+      // This ensures we see the updated profile view after saving changes
+      router.refresh();
     } catch (error) {
       if (error instanceof Error) {
         message.error(`Failed to update profile: ${error.message}`);
@@ -119,7 +123,8 @@ export default function UserPage() {
   };
 
   // Only allow editing if this is our own profile
-  const canEdit = currentUser?.id === userId;
+  // Compare as strings to ensure consistent comparison regardless of type (string vs number)
+  const canEdit = String(currentUser?.id) === String(userId);
 
   // Custom styles for descriptions to ensure text is visible on dark backgrounds
   const descriptionsStyle = {

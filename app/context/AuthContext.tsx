@@ -34,9 +34,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Update API service with current user ID whenever user changes
     useEffect(() => {
         if (user && user.id) {
-            apiService.setCurrentUserId(user.id);
+            // Ensure we're consistently using a string representation of the ID
+            apiService.setCurrentUserId(String(user.id));
+            console.log("Set current user ID in API service:", user.id);
         } else {
             apiService.setCurrentUserId(null);
+            console.log("Cleared current user ID in API service");
         }
     }, [apiService, user]);
 

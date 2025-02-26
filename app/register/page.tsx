@@ -50,13 +50,18 @@ const Register: React.FC = () => {
                 } else {
                     message.error(`Registration failed: ${errorMsg}`);
                 }
+
+                // Redirect back to the register page (reload the page)
+                router.refresh(); // Refresh the current page
+                // Alternative: router.push('/register');
             } else {
                 console.error("An unknown error occurred during registration.");
                 setError("Registration failed due to an unknown error.");
                 message.error("Registration failed due to an unknown error.");
-            }
 
-            // Stay on the registration page, no need to redirect
+                // Redirect back to register page
+                router.refresh();
+            }
         }
     };
 
