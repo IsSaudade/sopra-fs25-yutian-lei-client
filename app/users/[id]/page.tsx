@@ -23,24 +23,26 @@ export default function UserPage() {
   const [error, setError] = useState<string | null>(null);
   const [form] = Form.useForm();
 
-  // Debug output
+  // Debug output to help diagnose issues
   useEffect(() => {
-    console.log("Current user ID:", currentUser?.id, "Profile user ID:", userId);
-    console.log("Can edit?", String(currentUser?.id) === String(userId));
+    if (currentUser) {
+      console.log("==== User Profile Page Debug ====");
+      console.log("Current user:", currentUser);
+      console.log("Current user ID:", currentUser.id, "Type:", typeof currentUser.id);
+      console.log("Profile user ID:", userId, "Type:", typeof userId);
+      console.log("Comparing IDs:", String(currentUser.id) === String(userId));
+      console.log("================================");
+    }
   }, [currentUser, userId]);
 
   useEffect(() => {
-    if (!currentUser) {
-      return;
-    }
-
     const fetchUser = async () => {
       try {
         setLoading(true);
         setError(null);
         const data: User = await apiService.get<User>(`/users/${userId}`);
-        setUser(data);
         console.log("Fetched user data:", data);
+        setUser(data);
 
         // Initialize form with user data
         form.setFieldsValue({
@@ -65,8 +67,26 @@ export default function UserPage() {
       }
     };
 
-    fetchUser();
+    if (currentUser) {
+      fetchUser();
+    }
   }, [userId, apiService, router, currentUser, form]);
+
+  // Function to determine if current user can edit this profile
+  const checkCanEdit = () => {
+    if (!currentUser || !userId) return false;
+
+    // Make sure we're comparing strings to avoid type issues
+    const currentId = String(currentUser.id);
+    const profileId = String(userId);
+
+    const result = currentId === profileId;
+    console.log(`Can edit check: ${currentId} vs ${profileId} = ${result}`);
+    return result;
+  };
+
+  // Cache the result
+  const canEdit = checkCanEdit();
 
   const handleEdit = () => {
     if (!canEdit) {
@@ -83,11 +103,20 @@ export default function UserPage() {
 
   const handleSave = async () => {
     try {
+      if (!canEdit) {
+        message.error("Permission denied: You can only edit your own profile");
+        setIsEditing(false);
+        return;
+      }
+
       const values = await form.validateFields();
       console.log("Submitting form values:", values);
 
       // Ensure the current user ID is set correctly
       apiService.setCurrentUserId(String(currentUser?.id));
+
+      // Log headers to debug
+      console.log("Current user ID for request:", String(currentUser?.id));
 
       // Make PUT request to update user
       await apiService.put(`/users/${userId}`, {
@@ -135,10 +164,6 @@ export default function UserPage() {
   const navigateBack = () => {
     router.push("/users");
   };
-
-  // Only allow editing if this is our own profile
-  // Compare as strings to ensure consistent comparison regardless of type (string vs number)
-  const canEdit = String(currentUser?.id) === String(userId);
 
   // Custom styles for descriptions to ensure text is visible on dark backgrounds
   const descriptionsStyle = {
@@ -223,6 +248,9 @@ export default function UserPage() {
                     </Descriptions.Item>
                     <Descriptions.Item label="Birthday">
                       {user.birthday ? new Date(user.birthday).toLocaleDateString() : "Not set"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="User ID">
+                      {user.id} {canEdit && "(Your profile)"}
                     </Descriptions.Item>
                   </Descriptions>
               ) : user && isEditing ? (

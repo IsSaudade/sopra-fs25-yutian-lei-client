@@ -26,6 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const { value: storedUser, set: setStoredUser, clear: clearStoredUser } = useLocalStorage<User | null>("currentUser", null);
     const { value: token, set: setToken, clear: clearToken } = useLocalStorage<string>("token", "");
     const router = useRouter();
     const pathname = usePathname();
@@ -43,6 +44,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [apiService, user]);
 
+    // Initialize user from localStorage on mount
+    useEffect(() => {
+        if (storedUser && token) {
+            console.log("Restoring user from localStorage:", storedUser);
+            setUser(storedUser);
+            setLoading(false);
+        } else if (!token) {
+            setUser(null);
+            setLoading(false);
+        } else {
+            fetchCurrentUser();
+        }
+    }, [storedUser, token]);
+
     const fetchCurrentUser = async () => {
         if (!token) {
             setUser(null);
@@ -51,29 +66,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            // In a real app, you would have a /me endpoint or similar
-            // Here we're using the /users endpoint and assuming the first user is the current user
+            setLoading(true);
+            // In a real app, you would have a /me endpoint
+            // Here we fake it - in a real app this would be more reliable
             const users = await apiService.get<User[]>("/users");
-            if (users && users.length > 0) {
-                setUser(users[0]);
+
+            // Find user with matching token - this is more reliable than using first user
+            const foundUser = users.find(u => u.token === token);
+
+            if (foundUser) {
+                console.log("Found current user:", foundUser);
+                setUser(foundUser);
+                setStoredUser(foundUser); // Store in localStorage
             } else {
+                console.warn("User not found with token, clearing auth state");
                 clearToken();
+                clearStoredUser();
                 setUser(null);
             }
         } catch (error) {
             console.error("Failed to fetch current user:", error);
             clearToken();
+            clearStoredUser();
             setUser(null);
         } finally {
             setLoading(false);
         }
     };
-
-    // Initialize on mount
-    useEffect(() => {
-        fetchCurrentUser();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token]); // Re-run when token changes
 
     // Check for protected routes
     useEffect(() => {
@@ -91,9 +110,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         try {
             const response = await apiService.post<User>("/login", { username, password });
-            if (response.token) {
+            if (response && response.token) {
+                console.log("Login successful, user:", response);
                 setToken(response.token);
                 setUser(response);
+                setStoredUser(response); // Store in localStorage
                 router.push("/users");
             }
         } catch (error) {
@@ -108,14 +129,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         try {
             const response = await apiService.post<User>("/users", userData);
-            if (response.token) {
+            if (response && response.token) {
+                console.log("Registration successful, user:", response);
                 setToken(response.token);
                 setUser(response);
+                setStoredUser(response); // Store in localStorage
                 router.push("/users");
             }
         } catch (error) {
             console.error("Registration error:", error);
-            // 向上传递错误，让组件处理
             throw error;
         } finally {
             setLoading(false);
@@ -130,12 +152,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 await apiService.post(`/logout/${user.id}`, {});
             }
             clearToken();
+            clearStoredUser();
             setUser(null);
             router.push("/login");
         } catch (error) {
             console.error("Logout error:", error);
             // Even if logout fails on server, clear local state
             clearToken();
+            clearStoredUser();
             setUser(null);
         } finally {
             setLoading(false);
