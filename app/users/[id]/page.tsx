@@ -275,7 +275,11 @@ export default function UserPage() {
                         name="birthday"
                         label="Birthday (Optional)"
                     >
-                      <DatePicker style={{ width: "100%" }} />
+                      <DatePicker
+                          style={{ width: "100%" }}
+                          picker="date"
+                          mode="date"
+                      />
                     </Form.Item>
 
                     <Form.Item>
