@@ -276,9 +276,8 @@ export default function UserPage() {
                         label="Birthday (Optional)"
                     >
                       <DatePicker
-                          style={{ width: "100%" }}
-                          picker="date"
-                          mode="date"
+                          style={{ width: "100%", color: "#000" }}
+                          dropdownClassName="custom-calendar-dropdown"
                       />
                     </Form.Item>
 
