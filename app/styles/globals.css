@@ -67,3 +67,11 @@ a {
 .calendar-popup .ant-picker-header button {
   color: rgba(0, 0, 0, 0.85) !important;
 }
+
+.custom-calendar-dropdown .ant-picker-cell {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.custom-calendar-dropdown .ant-picker-content th {
+  color: rgba(0, 0, 0, 0.85) !important;
+}

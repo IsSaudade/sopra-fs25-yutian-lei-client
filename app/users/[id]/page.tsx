@@ -278,6 +278,7 @@ export default function UserPage() {
                       <DatePicker
                           style={{ width: "100%", color: "#000" }}
                           dropdownClassName="custom-calendar-dropdown"
+                          popupClassName="calendar-popup"
                       />
                     </Form.Item>
 
