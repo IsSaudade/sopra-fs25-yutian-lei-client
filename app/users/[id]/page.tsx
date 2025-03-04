@@ -276,7 +276,7 @@ export default function UserPage() {
                         label="Birthday (Optional)"
                     >
                       <DatePicker
-                          style={{ width: "100%", color: "#000" }}
+                          style={{ width: "100%", color: "white" }}
                           popupClassName="calendar-popup"
                           dropdownClassName="custom-calendar-dropdown"
 
