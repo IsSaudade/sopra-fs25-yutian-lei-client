@@ -60,3 +60,10 @@ a {
   min-height: 100vh;
   background-color: rgb(41, 44, 59);
 }
+
+.calendar-popup .ant-picker-content th,
+.calendar-popup .ant-picker-cell,
+.calendar-popup .ant-picker-header-view,
+.calendar-popup .ant-picker-header button {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
