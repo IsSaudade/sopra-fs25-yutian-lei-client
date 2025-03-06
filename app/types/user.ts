@@ -4,7 +4,7 @@ export interface User {
   username: string;
   token: string;
   status: string;
-  creationDate: string | Date;
+  creation_date: string | Date;
   birthday?: string | Date | null;
   password?: string;
 }

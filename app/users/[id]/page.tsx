@@ -244,7 +244,7 @@ export default function UserPage() {
                       </Tag>
                     </Descriptions.Item>
                     <Descriptions.Item label="Creation Date">
-                      {user.creationDate ? new Date(user.creationDate).toLocaleDateString() : "N/A"}
+                      {user.creation_date ? new Date(user.creation_date).toLocaleDateString() : "N/A"}
                     </Descriptions.Item>
                     <Descriptions.Item label="Birthday">
                       {user.birthday ? new Date(user.birthday).toLocaleDateString() : "Not set"}
