@@ -34,8 +34,8 @@ const columns: TableProps<User>["columns"] = [
   },
   {
     title: "Creation Date",
-    dataIndex: "create_date",
-    key: "create_date",
+    dataIndex: "creation_date",
+    key: "creation_date",
     render: (date) => (
         date ? new Date(date).toLocaleDateString() : "N/A"
     ),
