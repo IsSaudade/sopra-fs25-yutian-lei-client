@@ -2,93 +2,119 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, Form, Input, message, Card } from "antd";
-import { useState } from "react";
-import { useApi } from "@/hooks/useApi";
-import { User } from "@/types/user";
+import { Button, Form, Input, message, Card, Alert } from "antd";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import PageLayout from "@/components/PageLayout";
 
-const Register = () => {
+interface FormFieldProps {
+    username: string;
+    name: string;
+    password: string;
+    birthday?: Date;
+}
+
+const Register: React.FC = () => {
     const router = useRouter();
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
-    const apiService = useApi();
+    const { register, user, loading } = useAuth();
+    const [error, setError] = useState<string | null>(null);
 
-    const handleRegister = async (values: { username: string; name: string; password: string }) => {
-        setLoading(true);
+    // If user is already logged in, redirect to users page
+    useEffect(() => {
+        if (user && !loading) {
+            router.push("/users");
+        }
+    }, [user, loading, router]);
 
+    const handleRegister = async (values: FormFieldProps) => {
         try {
-            // 注册用户 - POST到/users端点
-            const response = await apiService.post<User>("/users", values);
-
-            if (response && response.id) {
-                // 存储用户信息到localStorage
-                localStorage.setItem("userId", response.id);
-                if (response.token) {
-                    localStorage.setItem("token", response.token);
-                }
-
-                message.success("注册成功！");
-                router.push("/users");
-            } else {
-                throw new Error("服务器响应无效");
-            }
+            setError(null); // Clear any previous errors
+            await register(values);
+            message.success("Registration successful!");
+            // Navigation is handled in the auth context
         } catch (error) {
-            console.error("注册失败:", error);
-            message.error("注册失败: " + (error instanceof Error ? error.message : "未知错误"));
-        } finally {
-            setLoading(false);
+            if (error instanceof Error) {
+                // Display error message
+                const errorMsg = error.message;
+                message.error(`Registration failed: ${errorMsg}`);
+
+                // Completely redirect to a new register page
+                // Adding a timestamp to force a fresh page load
+                router.push(`/register?refresh=${Date.now()}`);
+            } else {
+                console.error("An unknown error occurred during registration.");
+                message.error("Registration failed due to an unknown error.");
+
+                // Redirect to a new register page
+                router.push(`/register?refresh=${Date.now()}`);
+            }
         }
     };
 
     return (
-        <div className="login-container">
-            <Card title="注册" style={{ width: 400, borderRadius: "10px" }}>
-                <Form
-                    form={form}
-                    name="register"
-                    size="large"
-                    onFinish={handleRegister}
-                    layout="vertical"
-                >
-                    <Form.Item
-                        name="username"
-                        label="用户名"
-                        rules={[{ required: true, message: "请输入用户名!" }]}
+        <PageLayout>
+            <div className="login-container">
+                <Card title="Register" style={{ width: 400, borderRadius: "10px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
+                    {error && (
+                        <Alert
+                            message="Registration Error"
+                            description={error}
+                            type="error"
+                            showIcon
+                            style={{ marginBottom: "16px" }}
+                        />
+                    )}
+
+                    <Form
+                        form={form}
+                        name="register"
+                        size="large"
+                        variant="outlined"
+                        onFinish={handleRegister}
+                        layout="vertical"
                     >
-                        <Input placeholder="请输入用户名" />
-                    </Form.Item>
+                        <Form.Item
+                            name="username"
+                            label="Username"
+                            rules={[{ required: true, message: "Please input your username!" }]}
+                        >
+                            <Input placeholder="Enter username" />
+                        </Form.Item>
 
-                    <Form.Item
-                        name="name"
-                        label="姓名"
-                        rules={[{ required: true, message: "请输入姓名!" }]}
-                    >
-                        <Input placeholder="请输入姓名" />
-                    </Form.Item>
+                        <Form.Item
+                            name="name"
+                            label="Name"
+                            rules={[{ required: true, message: "Please input your name!" }]}
+                        >
+                            <Input placeholder="Enter name" />
+                        </Form.Item>
 
-                    <Form.Item
-                        name="password"
-                        label="密码"
-                        rules={[{ required: true, message: "请输入密码!" }]}
-                    >
-                        <Input.Password placeholder="请输入密码" />
-                    </Form.Item>
+                        <Form.Item
+                            name="password"
+                            label="Password"
+                            rules={[{ required: true, message: "Please input your password!" }]}
+                        >
+                            <Input.Password placeholder="Enter password" />
+                        </Form.Item>
 
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" className="login-button" block loading={loading}>
-                            注册
-                        </Button>
-                    </Form.Item>
-                </Form>
 
-                <div style={{ textAlign: "center", marginTop: "20px" }}>
-                    已有账号？{" "}
-                    <Link href="/login" style={{ color: "#75bd9d" }}>
-                        点击登录
-                    </Link>
-                </div>
-            </Card>
-        </div>
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit" className="login-button" block loading={loading}>
+                                Register
+                            </Button>
+                        </Form.Item>
+                    </Form>
+
+                    <div style={{ textAlign: "center", marginTop: "20px" }}>
+                        Already have an account?{" "}
+                        <Link href="/login" style={{ color: "#75bd9d" }}>
+                            Login here
+                        </Link>
+                    </div>
+                </Card>
+            </div>
+        </PageLayout>
     );
 };
 

@@ -1,10 +1,10 @@
 export interface User {
   id: string;
+  name: string;
   username: string;
-  name?: string;
-  password?: string; // Only used for registration
-  token?: string;
+  token: string;
   status: string;
   creation_date: string | Date;
   birthday?: string | Date | null;
+  password?: string;
 }
