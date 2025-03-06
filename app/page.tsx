@@ -1,117 +1,89 @@
-"use client"; // For components that need React hooks and browser APIs, SSR (server side rendering) has to be disabled. Read more here: https://nextjs.org/docs/pages/building-your-application/rendering/server-side-rendering
+"use client";
 import "@ant-design/v5-patch-for-react-19";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Button } from "antd";
-import { BookOutlined, CodeOutlined, GlobalOutlined } from "@ant-design/icons";
+import { Button, Card, Row, Col, Typography } from "antd";
+import { UserOutlined, LoginOutlined, FormOutlined } from "@ant-design/icons";
 import styles from "@/styles/page.module.css";
+import PageLayout from "@/components/PageLayout";
+import { useAuth } from "@/context/AuthContext";
+
+const { Title, Paragraph } = Typography;
 
 export default function Home() {
   const router = useRouter();
-  return (
-      <div className={styles.page}>
-        <main className={styles.main}>
-          <Image
-              className={styles.logo}
-              src="/next.svg"
-              alt="Next.js logo"
-              width={180}
-              height={38}
-              priority
-          />
-          <ol>
-            <li>
-              <code>app/page.tsx</code>{" "}
-              is the landing page for your application, currently being displayed.
-            </li>
-            <li>
-              <code>app/login/page.tsx</code> is the login page for users.
-            </li>
-            <li>
-              <code>app/users/page.tsx</code>{" "}
-              is the dashboard that shows an overview of all users, fetched from
-              the server.
-            </li>
-            <li>
-              <code>app/users/[id]/page.tsx</code>{" "}
-              is a slug page that shows info of a particular user. Since each user
-              has its own id, each user has its own infopage, dynamically with the
-              use of slugs.
-            </li>
-            <li>
-              To test, modify the current page <code>app/page.tsx</code>{" "}
-              and save to see your changes instantly.
-            </li>
-          </ol>
+  const { user } = useAuth();
 
-          <div className={styles.ctas}>
-            <Button
-                type="primary" // as defined in the ConfigProvider in [layout.tsx](./layout.tsx), all primary antd elements are colored #22426b, with buttons #75bd9d as override
-                color="red" // if a single/specific antd component needs yet a different color, it can be explicitly overridden in the component as shown here
-                variant="solid" // read more about the antd button and its options here: https://ant.design/components/button
-                onClick={() =>
-                    globalThis.open(
-                        "https://vercel.com/new",
-                        "_blank",
-                        "noopener,noreferrer",
+  return (
+      <PageLayout>
+        <div className={styles.page} style={{ padding: "40px 0" }}>
+          <main className={styles.main}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "40px" }}>
+              <Image
+                  className={styles.logo}
+                  src="/next.svg"
+                  alt="Next.js logo"
+                  width={180}
+                  height={38}
+                  priority
+              />
+            </div>
+
+            <Row gutter={[24, 24]} justify="center">
+              <Col xs={24} md={18} lg={16} xl={14}>
+                <Card title={<Title level={2}>Welcome to SoPra FS25</Title>} bordered>
+                  <Paragraph style={{ fontSize: "16px", marginBottom: "1.5rem" }}>
+                    This is the user management application for Software Praktikum FS25. This application allows you to register
+                    an account, log in, view all registered users, and manage your profile information.
+                  </Paragraph>
+
+                  <Paragraph style={{ fontSize: "16px" }}>
+                    <strong>User Stories Implemented:</strong>
+                  </Paragraph>
+                  <ul style={{ paddingLeft: "20px", marginBottom: "1.5rem" }}>
+                    <li>User registration and login functionality</li>
+                    <li>View a list of all registered users</li>
+                    <li>Check user profiles with details like creation date and online status</li>
+                    <li>Edit your own profile information</li>
+                  </ul>
+
+                  <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
+                    {!user ? (
+                        <>
+                          <Button
+                              type="primary"
+                              icon={<FormOutlined />}
+                              onClick={() => router.push("/register")}
+                              size="large"
+                          >
+                            Register
+                          </Button>
+
+                          <Button
+                              type="default"
+                              icon={<LoginOutlined />}
+                              onClick={() => router.push("/login")}
+                              size="large"
+                          >
+                            Login
+                          </Button>
+                        </>
+                    ) : (
+                        <Button
+                            type="primary"
+                            icon={<UserOutlined />}
+                            onClick={() => router.push("/users")}
+                            size="large"
+                        >
+                          View Users
+                        </Button>
                     )}
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-              Deploy now
-            </Button>
-            <Button
-                type="default"
-                variant="solid"
-                onClick={() =>
-                    globalThis.open(
-                        "https://nextjs.org/docs",
-                        "_blank",
-                        "noopener,noreferrer",
-                    )}
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-              Read our docs
-            </Button>
-            <Button
-                type="primary"
-                variant="solid"
-                onClick={() => router.push("/login")}
-            >
-              Go to login
-            </Button>
-          </div>
-        </main>
-        <footer className={styles.footer}>
-          <Button
-              type="link"
-              icon={<BookOutlined />}
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-          >
-            Learn
-          </Button>
-          <Button
-              type="link"
-              icon={<CodeOutlined />}
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-          >
-            Examples
-          </Button>
-          <Button
-              type="link"
-              icon={<GlobalOutlined />}
-              href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-          >
-            Go to nextjs.org →
-          </Button>
-        </footer>
-      </div>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+          </main>
+        </div>
+      </PageLayout>
   );
 }
