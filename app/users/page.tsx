@@ -13,8 +13,14 @@ const UsersList = () => {
   const apiService = useApi();
   const [users, setUsers] = useState<User[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const { value: userId, clear: clearUserId } = useLocalStorage<string | null>("userId", null);
   const { clear: clearToken } = useLocalStorage<string | null>("token", null);
+
+  // Debug - log userId from localStorage
+  useEffect(() => {
+    console.log("UsersPage - userId from localStorage:", userId);
+  }, [userId]);
 
   // Columns for the table
   const columns: TableProps<User>["columns"] = [
@@ -44,22 +50,34 @@ const UsersList = () => {
     },
   ];
 
-  // Simple auth check
+  // Authentication check - with better handling
   useEffect(() => {
-    if (!userId) {
-      console.log("No userId, redirecting to login");
-      router.push("/login");
-    }
-  }, [userId, router]);
+    const checkAuth = () => {
+      console.log("Checking authentication...");
 
-  // Fetch users
+      if (!userId) {
+        console.log("No userId found, redirecting to login");
+        router.push("/login");
+      } else {
+        console.log("User is authenticated, userId:", userId);
+        // Set current user ID for API calls
+        apiService.setCurrentUserId(userId);
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuth();
+  }, [userId, router, apiService]);
+
+  // Fetch users only after auth is checked
   useEffect(() => {
     const fetchUsers = async () => {
-      if (!userId) return;
+      if (!userId || !authChecked) return;
+
+      console.log("Authenticated, fetching users...");
 
       try {
         setLoading(true);
-        apiService.setCurrentUserId(userId);
 
         const data = await apiService.get<User[]>("/users");
         console.log("Fetched users:", data);
@@ -88,17 +106,25 @@ const UsersList = () => {
     };
 
     fetchUsers();
-  }, [userId, apiService]);
+  }, [userId, apiService, authChecked]);
 
   const handleLogout = () => {
+    console.log("Logging out...");
     clearUserId();
     clearToken();
     apiService.setCurrentUserId(null);
+
+    console.log("Redirecting to login...");
     router.push("/login");
   };
 
-  if (!userId) {
-    return null;
+  // Show loading state while checking authentication
+  if (!authChecked || !userId) {
+    return (
+        <div className="card-container">
+          <Spin size="large" tip="Checking authentication..." />
+        </div>
+    );
   }
 
   return (

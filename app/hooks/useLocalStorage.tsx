@@ -22,8 +22,8 @@ interface LocalStorage<T> {
  *  - clear: Resets state to defaultValue and deletes localStorage key.
  */
 export default function useLocalStorage<T>(
-  key: string,
-  defaultValue: T,
+    key: string,
+    defaultValue: T,
 ): LocalStorage<T> {
   const [value, setValue] = useState<T>(defaultValue);
 
@@ -32,27 +32,38 @@ export default function useLocalStorage<T>(
     if (typeof window === "undefined") return; // SSR safeguard
     try {
       const stored = globalThis.localStorage.getItem(key);
+      console.log(`[LocalStorage] Reading ${key}:`, stored);
+
       if (stored) {
-        setValue(JSON.parse(stored) as T);
+        const parsedValue = JSON.parse(stored) as T;
+        console.log(`[LocalStorage] Parsed ${key}:`, parsedValue);
+        setValue(parsedValue);
+      } else {
+        console.log(`[LocalStorage] No value found for ${key}, using default:`, defaultValue);
       }
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
+      console.error(`[LocalStorage] Error reading localStorage key "${key}":`, error);
     }
-  }, [key]);
+  }, [key, defaultValue]);
 
   // Simple setter that updates both state and localStorage
   const set = (newVal: T) => {
+    console.log(`[LocalStorage] Setting ${key}:`, newVal);
     setValue(newVal);
     if (typeof window !== "undefined") {
-      globalThis.localStorage.setItem(key, JSON.stringify(newVal));
+      const stringified = JSON.stringify(newVal);
+      globalThis.localStorage.setItem(key, stringified);
+      console.log(`[LocalStorage] Stored ${key} in localStorage:`, stringified);
     }
   };
 
   // Removes the key from localStorage and resets the state
   const clear = () => {
+    console.log(`[LocalStorage] Clearing ${key}`);
     setValue(defaultValue);
     if (typeof window !== "undefined") {
       globalThis.localStorage.removeItem(key);
+      console.log(`[LocalStorage] Removed ${key} from localStorage`);
     }
   };
 

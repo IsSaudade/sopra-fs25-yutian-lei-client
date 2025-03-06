@@ -23,8 +23,6 @@ const Register = () => {
     const { set: setUserId } = useLocalStorage<string | null>("userId", null);
     const { set: setToken } = useLocalStorage<string | null>("token", null);
 
-    // IMPORTANT: Removed the authentication check that causes the loop
-
     const handleRegister = async (values: FormValues) => {
         setLoading(true);
         setError(null);
@@ -39,21 +37,30 @@ const Register = () => {
             if (response && response.id) {
                 message.success("Registration successful!");
 
-                // Store user data in localStorage
+                // Store user data in localStorage - this is critical!
+                console.log("Storing user ID:", response.id);
                 setUserId(response.id);
+
                 if (response.token) {
+                    console.log("Storing token:", response.token);
                     setToken(response.token);
+                } else {
+                    console.warn("No token received from registration");
                 }
 
                 // Set current user ID for future API calls
                 apiService.setCurrentUserId(response.id);
 
-                // Redirect to users list page
-                router.push("/users");
+                // Intentional delay to ensure localStorage is updated
+                setTimeout(() => {
+                    console.log("Navigating to users page...");
+                    router.push("/users");
+                }, 300);
             } else {
-                throw new Error("Invalid response from server");
+                throw new Error("Invalid response from server - missing user ID");
             }
         } catch (error) {
+            console.error("Registration error details:", error);
             if (error instanceof Error) {
                 setError(error.message);
                 message.error(`Registration failed: ${error.message}`);

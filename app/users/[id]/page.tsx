@@ -20,6 +20,7 @@ export default function UserProfile() {
   const [loading, setLoading] = useState<boolean>(true);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [form] = Form.useForm();
 
   // Debug - log the userId from params and currentUserId
@@ -28,22 +29,31 @@ export default function UserProfile() {
     console.log("UserProfile - Current User ID:", currentUserId);
   }, [userId, currentUserId]);
 
-  // Check authentication
+  // Check authentication - with better handling
   useEffect(() => {
-    if (!currentUserId) {
-      console.log("No userId found, redirecting to login");
-      router.push("/login");
-      return;
-    }
+    const checkAuth = () => {
+      console.log("Checking authentication for profile page...");
 
-    // Set current user ID for API calls
-    apiService.setCurrentUserId(currentUserId);
+      if (!currentUserId) {
+        console.log("No userId found, redirecting to login");
+        router.push("/login");
+      } else {
+        console.log("User is authenticated, userId:", currentUserId);
+        // Set current user ID for API calls
+        apiService.setCurrentUserId(currentUserId);
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuth();
   }, [currentUserId, router, apiService]);
 
-  // Fetch user data
+  // Fetch user data only after auth is checked
   useEffect(() => {
     const fetchUser = async () => {
-      if (!currentUserId || !userId) return;
+      if (!currentUserId || !userId || !authChecked) return;
+
+      console.log("Authenticated, fetching user profile...");
 
       try {
         setLoading(true);
@@ -87,7 +97,7 @@ export default function UserProfile() {
     };
 
     fetchUser();
-  }, [userId, apiService, router, currentUserId, form]);
+  }, [userId, apiService, router, currentUserId, form, authChecked]);
 
   // Function to determine if current user can edit this profile
   const canEdit = currentUserId === userId;
@@ -161,9 +171,13 @@ export default function UserProfile() {
     }
   };
 
-  // Redirect to login if not authenticated
-  if (!currentUserId) {
-    return null;
+  // Show loading state while checking authentication
+  if (!authChecked || !currentUserId) {
+    return (
+        <div className="card-container">
+          <Spin size="large" tip="Checking authentication..." />
+        </div>
+    );
   }
 
   return (

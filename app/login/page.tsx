@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, Form, Input, message, Card } from "antd";
+import { Button, Form, Input, message, Card, Alert } from "antd";
 import { useState } from "react";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useApi } from "@/hooks/useApi";
@@ -17,14 +17,14 @@ const Login = () => {
   const router = useRouter();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const apiService = useApi();
   const { set: setUserId } = useLocalStorage<string | null>("userId", null);
   const { set: setToken } = useLocalStorage<string | null>("token", null);
 
-  // IMPORTANT: Removed the authentication check that causes the loop
-
   const handleLogin = async (values: FormValues) => {
     setLoading(true);
+    setError(null);
 
     try {
       console.log("Sending login data:", values);
@@ -36,24 +36,35 @@ const Login = () => {
       if (response && response.id) {
         message.success("Login successful!");
 
-        // Store user data in localStorage
+        // Store user data in localStorage - this is critical!
+        console.log("Storing user ID:", response.id);
         setUserId(response.id);
+
         if (response.token) {
+          console.log("Storing token:", response.token);
           setToken(response.token);
+        } else {
+          console.warn("No token received from login");
         }
 
         // Set current user ID for future API calls
         apiService.setCurrentUserId(response.id);
 
-        // Redirect to users list page
-        router.push("/users");
+        // Intentional delay to ensure localStorage is updated
+        setTimeout(() => {
+          console.log("Navigating to users page...");
+          router.push("/users");
+        }, 300);
       } else {
-        throw new Error("Invalid response from server");
+        throw new Error("Invalid response from server - missing user ID");
       }
     } catch (error) {
+      console.error("Login error details:", error);
       if (error instanceof Error) {
+        setError(error.message);
         message.error(`Login failed: ${error.message}`);
       } else {
+        setError("An unknown error occurred");
         message.error("Login failed due to an unknown error");
       }
     } finally {
@@ -64,6 +75,16 @@ const Login = () => {
   return (
       <div className="login-container">
         <Card title="Login" style={{ width: 400, borderRadius: "10px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
+          {error && (
+              <Alert
+                  message="Login Error"
+                  description={error}
+                  type="error"
+                  showIcon
+                  style={{ marginBottom: "16px" }}
+              />
+          )}
+
           <Form
               form={form}
               name="login"
