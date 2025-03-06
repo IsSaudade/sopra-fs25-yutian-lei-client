@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import { User } from "@/types/user";
-import { Card, Table, Tag, message, Spin } from "antd";
+import { Card, Table, Tag, message, Spin, Button } from "antd";
 import type { TableProps } from "antd";
-import PageLayout from "@/components/PageLayout";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 // Columns for the antd table of User objects
 const columns: TableProps<User>["columns"] = [
@@ -16,11 +15,6 @@ const columns: TableProps<User>["columns"] = [
     dataIndex: "username",
     key: "username",
     render: (text) => <a>{text}</a>,
-  },
-  {
-    title: "Name",
-    dataIndex: "name",
-    key: "name",
   },
   {
     title: "Status",
@@ -42,14 +36,28 @@ const columns: TableProps<User>["columns"] = [
   },
 ];
 
-const Dashboard: React.FC = () => {
+const UsersList = () => {
   const router = useRouter();
   const apiService = useApi();
   const [users, setUsers] = useState<User[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const { value: userId, clear: clearUserId } = useLocalStorage<string | null>("userId", null);
+  const { clear: clearToken } = useLocalStorage<string | null>("token", null);
+
+  // Check authentication
+  useEffect(() => {
+    if (!userId) {
+      router.push("/login");
+    } else {
+      // Set current user ID for API calls
+      apiService.setCurrentUserId(userId);
+    }
+  }, [userId, router, apiService]);
 
   useEffect(() => {
     const fetchUsers = async () => {
+      if (!userId) return;
+
       try {
         setLoading(true);
         const users: User[] = await apiService.get<User[]>("/users");
@@ -58,6 +66,11 @@ const Dashboard: React.FC = () => {
       } catch (error) {
         if (error instanceof Error) {
           message.error(`Failed to fetch users: ${error.message}`);
+
+          // If unauthorized, redirect to login
+          if (error.message.includes("401") || error.message.includes("403")) {
+            handleLogout();
+          }
         } else {
           console.error("An unknown error occurred while fetching users.");
         }
@@ -67,36 +80,49 @@ const Dashboard: React.FC = () => {
     };
 
     fetchUsers();
-  }, [apiService]);
+  }, [apiService, userId]);
+
+  const handleLogout = () => {
+    clearUserId();
+    clearToken();
+    apiService.setCurrentUserId(null);
+    router.push("/login");
+  };
+
+  // Redirect to login if not authenticated
+  if (!userId) {
+    return null;
+  }
 
   return (
-      <ProtectedRoute>
-        <PageLayout requireAuth>
-          <div className="card-container">
-            <Card
-                title="All Users"
-                loading={loading}
-                className="dashboard-container"
-                style={{ width: "80%", maxWidth: "900px", margin: "40px auto" }}
-            >
-              {users ? (
-                  <Table<User>
-                      columns={columns}
-                      dataSource={users}
-                      rowKey="id"
-                      onRow={(row) => ({
-                        onClick: () => router.push(`/users/${row.id}`),
-                        style: { cursor: "pointer" },
-                      })}
-                  />
-              ) : (
-                  <Spin tip="Loading users..." />
-              )}
-            </Card>
-          </div>
-        </PageLayout>
-      </ProtectedRoute>
+      <div className="card-container">
+        <Card
+            title="All Users"
+            loading={loading}
+            className="dashboard-container"
+            style={{ width: "80%", maxWidth: "900px", margin: "40px auto" }}
+            extra={
+              <Button onClick={handleLogout} type="primary" danger>
+                Logout
+              </Button>
+            }
+        >
+          {users ? (
+              <Table<User>
+                  columns={columns}
+                  dataSource={users}
+                  rowKey="id"
+                  onRow={(row) => ({
+                    onClick: () => router.push(`/users/${row.id}`),
+                    style: { cursor: "pointer" },
+                  })}
+              />
+          ) : (
+              <Spin tip="Loading users..." />
+          )}
+        </Card>
+      </div>
   );
 };
 
-export default Dashboard;
+export default UsersList;

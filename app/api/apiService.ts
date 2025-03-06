@@ -18,7 +18,6 @@ export class ApiService {
    * Set the current user ID for authenticated requests
    * @param userId - The ID of the current user or null to clear
    */
-  //users can only update their own profiles
   public setCurrentUserId(userId: string | null): void {
     this.currentUserId = userId;
     console.log("ApiService - setting currentUserId:", userId);
@@ -28,15 +27,12 @@ export class ApiService {
    * Get headers with optional user ID
    * @returns Headers with potential user ID
    */
-  //Provides consistent header handling across all request methods
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = { ...this.defaultHeaders };
 
     if (this.currentUserId) {
-      // TypeScript-safe way to add CurrentUserId header
-      // Make sure the ID is sent as a string, even if it's stored as a number
+      // Add the CurrentUserId header for authorization
       (headers as Record<string, string>)["CurrentUserId"] = String(this.currentUserId);
-      console.log("Request headers with CurrentUserId:", this.currentUserId);
     }
 
     return headers;
@@ -45,11 +41,6 @@ export class ApiService {
   /**
    * Helper function to check the response, parse JSON if content exists,
    * and throw an error if the response is not OK.
-   *
-   * @param res - The response from fetch.
-   * @param errorMessage - A descriptive error message for this call.
-   * @returns Parsed JSON data or empty object for 204 responses.
-   * @throws ApplicationError if res.ok is false.
    */
   private async processResponse<T>(
       res: Response,
@@ -145,12 +136,6 @@ export class ApiService {
       headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
-
-    //Add special logging for debugging authentication issues
-    if (res.status === 204) {
-      console.log("Received 204 No Content response, returning empty object");
-      return {} as T;
-    }
 
     return this.processResponse<T>(
         res,
