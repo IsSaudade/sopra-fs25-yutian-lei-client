@@ -12,6 +12,9 @@ export class ApiService {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
     };
+
+    // Debug - log the API domain on initialization
+    console.log("API Service initialized with baseURL:", this.baseURL);
   }
 
   /**
@@ -31,11 +34,12 @@ export class ApiService {
     const headers: HeadersInit = { ...this.defaultHeaders };
 
     if (this.currentUserId) {
-      // TypeScript-safe way to add CurrentUserId header
-      // Make sure the ID is sent as a string, even if it's stored as a number
+      // Add the CurrentUserId header for authorization
       (headers as Record<string, string>)["CurrentUserId"] = String(this.currentUserId);
-      console.log("Request headers with CurrentUserId:", this.currentUserId);
     }
+
+    // Debug - log headers on each request
+    console.log("Request headers:", headers);
 
     return headers;
   }
@@ -43,29 +47,30 @@ export class ApiService {
   /**
    * Helper function to check the response, parse JSON if content exists,
    * and throw an error if the response is not OK.
-   *
-   * @param res - The response from fetch.
-   * @param errorMessage - A descriptive error message for this call.
-   * @returns Parsed JSON data or empty object for 204 responses.
-   * @throws ApplicationError if res.ok is false.
    */
   private async processResponse<T>(
       res: Response,
       errorMessage: string,
   ): Promise<T> {
+    // Log the response status and URL for debugging
+    console.log(`Response from ${res.url}: status ${res.status} ${res.statusText}`);
+
     if (!res.ok) {
       let errorDetail = res.statusText;
       try {
         // Only try to parse JSON if there's content
         if (res.status !== 204 && res.headers.get("content-length") !== "0") {
           const errorInfo = await res.json();
+          console.error("Error response body:", errorInfo);
+
           if (errorInfo?.message) {
             errorDetail = errorInfo.message;
           } else {
             errorDetail = JSON.stringify(errorInfo);
           }
         }
-      } catch {
+      } catch (err) {
+        console.error("Error parsing error response:", err);
         // If parsing fails, keep using res.statusText
       }
       const detailedMessage = `${errorMessage} (${res.status}: ${errorDetail})`;
@@ -83,13 +88,24 @@ export class ApiService {
 
     // For 204 No Content responses, return an empty object
     if (res.status === 204) {
+      console.log("Received 204 No Content, returning empty object");
       return {} as T;
     }
 
-    // Otherwise parse JSON
-    return res.headers.get("Content-Type")?.includes("application/json")
-        ? res.json() as Promise<T>
-        : Promise.resolve(res as T);
+    // For successful responses with content
+    try {
+      if (res.headers.get("Content-Type")?.includes("application/json")) {
+        const data = await res.json();
+        console.log("Response data:", data);
+        return data as T;
+      } else {
+        console.log("Response is not JSON, returning response object");
+        return res as T;
+      }
+    } catch (err) {
+      console.error("Error parsing successful response:", err);
+      throw new Error(`Failed to parse response: ${err}`);
+    }
   }
 
   /**
@@ -99,6 +115,8 @@ export class ApiService {
    */
   public async get<T>(endpoint: string): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log(`Making GET request to: ${url}`);
+
     const res = await fetch(url, {
       method: "GET",
       headers: this.getHeaders(),
@@ -117,6 +135,9 @@ export class ApiService {
    */
   public async post<T>(endpoint: string, data: unknown): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log(`Making POST request to: ${url}`);
+    console.log("Request payload:", data);
+
     const res = await fetch(url, {
       method: "POST",
       headers: this.getHeaders(),
@@ -137,18 +158,13 @@ export class ApiService {
   public async put<T>(endpoint: string, data: unknown): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     console.log(`Making PUT request to ${url} with CurrentUserId: ${this.currentUserId}`);
+    console.log("Request payload:", data);
 
     const res = await fetch(url, {
       method: "PUT",
       headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
-
-    // For 204 responses, we don't need to parse the body
-    if (res.status === 204) {
-      console.log("Received 204 No Content response, returning empty object");
-      return {} as T;
-    }
 
     return this.processResponse<T>(
         res,
@@ -163,6 +179,8 @@ export class ApiService {
    */
   public async delete<T>(endpoint: string): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log(`Making DELETE request to: ${url}`);
+
     const res = await fetch(url, {
       method: "DELETE",
       headers: this.getHeaders(),
