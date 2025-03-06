@@ -12,11 +12,11 @@ const UsersList = () => {
   const router = useRouter();
   const apiService = useApi();
   const [users, setUsers] = useState<User[] | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const { value: userId, clear: clearUserId } = useLocalStorage<string | null>("userId", null);
   const { clear: clearToken } = useLocalStorage<string | null>("token", null);
 
-  // Columns for the antd table of User objects
+  // Columns for the table
   const columns: TableProps<User>["columns"] = [
     {
       title: "Username",
@@ -36,7 +36,7 @@ const UsersList = () => {
     },
     {
       title: "Creation Date",
-      dataIndex: "creation_date", // Using the server's property name
+      dataIndex: "creation_date", // Match the server's field name
       key: "creation_date",
       render: (date) => (
           date ? new Date(date).toLocaleDateString() : "N/A"
@@ -44,49 +44,43 @@ const UsersList = () => {
     },
   ];
 
-  // Check authentication first
+  // Simple auth check
   useEffect(() => {
-    console.log("Authentication check - userId:", userId);
-
     if (!userId) {
+      console.log("No userId, redirecting to login");
       router.push("/login");
-      return;
     }
+  }, [userId, router]);
 
-    // Set current user ID for API calls
-    apiService.setCurrentUserId(userId);
-  }, [userId, router, apiService]);
-
-  // Fetch users data
+  // Fetch users
   useEffect(() => {
     const fetchUsers = async () => {
       if (!userId) return;
 
       try {
         setLoading(true);
-        console.log("Fetching users with userId:", userId);
+        apiService.setCurrentUserId(userId);
 
-        const users = await apiService.get<User[]>("/users");
-        console.log("Fetched users:", users);
+        const data = await apiService.get<User[]>("/users");
+        console.log("Fetched users:", data);
 
-        if (Array.isArray(users)) {
-          setUsers(users);
+        if (Array.isArray(data)) {
+          setUsers(data);
         } else {
-          console.error("Unexpected response format:", users);
-          message.error("Received invalid user data format");
+          console.error("Unexpected response format:", data);
+          message.error("Received invalid data format");
         }
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("Failed to fetch users:", error);
 
         if (error instanceof Error) {
-          message.error(`Failed to fetch users: ${error.message}`);
+          message.error(error.message);
 
-          // If unauthorized, redirect to login
           if (error.message.includes("401") || error.message.includes("403")) {
             handleLogout();
           }
         } else {
-          message.error("Failed to fetch users: Unknown error");
+          message.error("Unknown error occurred");
         }
       } finally {
         setLoading(false);
@@ -94,32 +88,15 @@ const UsersList = () => {
     };
 
     fetchUsers();
-  }, [apiService, userId]);
+  }, [userId, apiService]);
 
   const handleLogout = () => {
-    console.log("Logging out and clearing state");
-
-    // Clear localStorage
     clearUserId();
     clearToken();
-
-    // Clear API service state
     apiService.setCurrentUserId(null);
-
-    // Navigate to login
     router.push("/login");
   };
 
-  // Show loading state while fetching data
-  if (loading && !users) {
-    return (
-        <div className="card-container">
-          <Spin size="large" tip="Loading users..." />
-        </div>
-    );
-  }
-
-  // Redirect to login if not authenticated
   if (!userId) {
     return null;
   }
@@ -128,7 +105,7 @@ const UsersList = () => {
       <div className="card-container">
         <Card
             title="All Users"
-            className="dashboard-container"
+            loading={loading}
             style={{ width: "80%", maxWidth: "900px", margin: "40px auto" }}
             extra={
               <Button onClick={handleLogout} type="primary" danger>
@@ -147,9 +124,7 @@ const UsersList = () => {
                   })}
               />
           ) : (
-              <div style={{ textAlign: "center", padding: "20px" }}>
-                No users found or error loading users
-              </div>
+              <Spin tip="Loading users..." />
           )}
         </Card>
       </div>
