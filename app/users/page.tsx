@@ -17,11 +17,6 @@ const columns: TableProps<User>["columns"] = [
     render: (text) => <a>{text}</a>,
   },
   {
-    title: "Name",
-    dataIndex: "name",
-    key: "name",
-  },
-  {
     title: "Status",
     dataIndex: "status",
     key: "status",

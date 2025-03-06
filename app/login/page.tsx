@@ -86,19 +86,11 @@ const Login = () => {
             </Form.Item>
 
             <Form.Item
-                name="name"
-                label="Name"
-                rules={[{ required: true, message: "Please input your name!" }]}
-            >
-              <Input placeholder="Enter name" />
-            </Form.Item>
-
-            <Form.Item
                 name="password"
                 label="Password"
                 rules={[{ required: true, message: "Please input your password!" }]}
             >
-              <Input placeholder="Enter password" />
+              <Input.Password placeholder="Enter password" />
             </Form.Item>
 
             <Form.Item>
