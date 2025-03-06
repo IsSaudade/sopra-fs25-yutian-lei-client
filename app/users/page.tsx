@@ -8,74 +8,76 @@ import { Card, Table, Tag, message, Spin, Button } from "antd";
 import type { TableProps } from "antd";
 import useLocalStorage from "@/hooks/useLocalStorage";
 
-// Columns for the antd table of User objects
-const columns: TableProps<User>["columns"] = [
-  {
-    title: "Username",
-    dataIndex: "username",
-    key: "username",
-    render: (text) => <a>{text}</a>,
-  },
-  {
-    title: "Status",
-    dataIndex: "status",
-    key: "status",
-    render: (status) => (
-        <Tag color={status === "ONLINE" ? "green" : "red"}>
-          {status}
-        </Tag>
-    ),
-  },
-  {
-    title: "Creation Date",
-    dataIndex: "creationDate",
-    key: "creationDate",
-    render: (date) => (
-        date ? new Date(date).toLocaleDateString() : "N/A"
-    ),
-  },
-];
-
 const UsersList = () => {
   const router = useRouter();
   const apiService = useApi();
   const [users, setUsers] = useState<User[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [checkingAuth, setCheckingAuth] = useState(true);
   const { value: userId, clear: clearUserId } = useLocalStorage<string | null>("userId", null);
   const { clear: clearToken } = useLocalStorage<string | null>("token", null);
 
-  // Check authentication - with better handling to prevent redirect loops
+  // Columns for the antd table of User objects
+  const columns: TableProps<User>["columns"] = [
+    {
+      title: "Username",
+      dataIndex: "username",
+      key: "username",
+      render: (text) => <a>{text}</a>,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => (
+          <Tag color={status === "ONLINE" ? "green" : "red"}>
+            {status}
+          </Tag>
+      ),
+    },
+    {
+      title: "Creation Date",
+      dataIndex: "creation_date", // Using the server's property name
+      key: "creation_date",
+      render: (date) => (
+          date ? new Date(date).toLocaleDateString() : "N/A"
+      ),
+    },
+  ];
+
+  // Check authentication first
   useEffect(() => {
-    const checkAuth = async () => {
-      setCheckingAuth(true);
+    console.log("Authentication check - userId:", userId);
 
-      if (!userId) {
-        console.log("No userId found, redirecting to login");
-        await router.push("/login");
-        return;
-      }
+    if (!userId) {
+      router.push("/login");
+      return;
+    }
 
-      // Set current user ID for API calls
-      apiService.setCurrentUserId(userId);
-      setCheckingAuth(false);
-    };
-
-    checkAuth();
+    // Set current user ID for API calls
+    apiService.setCurrentUserId(userId);
   }, [userId, router, apiService]);
 
-  // Only fetch users if authenticated
+  // Fetch users data
   useEffect(() => {
     const fetchUsers = async () => {
-      if (!userId || checkingAuth) return;
+      if (!userId) return;
 
       try {
         setLoading(true);
         console.log("Fetching users with userId:", userId);
-        const users: User[] = await apiService.get<User[]>("/users");
-        setUsers(users);
+
+        const users = await apiService.get<User[]>("/users");
         console.log("Fetched users:", users);
+
+        if (Array.isArray(users)) {
+          setUsers(users);
+        } else {
+          console.error("Unexpected response format:", users);
+          message.error("Received invalid user data format");
+        }
       } catch (error) {
+        console.error("Error fetching users:", error);
+
         if (error instanceof Error) {
           message.error(`Failed to fetch users: ${error.message}`);
 
@@ -84,7 +86,7 @@ const UsersList = () => {
             handleLogout();
           }
         } else {
-          console.error("An unknown error occurred while fetching users.");
+          message.error("Failed to fetch users: Unknown error");
         }
       } finally {
         setLoading(false);
@@ -92,39 +94,40 @@ const UsersList = () => {
     };
 
     fetchUsers();
-  }, [apiService, userId, checkingAuth]);
+  }, [apiService, userId]);
 
-  const handleLogout = async () => {
-    console.log("Logging out...");
+  const handleLogout = () => {
+    console.log("Logging out and clearing state");
 
-    // Clear localStorage first
+    // Clear localStorage
     clearUserId();
     clearToken();
 
     // Clear API service state
     apiService.setCurrentUserId(null);
 
-    // Wait a bit to ensure state is cleared
-    setTimeout(() => {
-      router.push("/login");
-    }, 100);
+    // Navigate to login
+    router.push("/login");
   };
 
-  // Show loading state while checking auth
-  if (checkingAuth) {
+  // Show loading state while fetching data
+  if (loading && !users) {
     return (
         <div className="card-container">
-          <Spin size="large" tip="Checking authentication..." />
+          <Spin size="large" tip="Loading users..." />
         </div>
     );
   }
 
-  // Render the users list
+  // Redirect to login if not authenticated
+  if (!userId) {
+    return null;
+  }
+
   return (
       <div className="card-container">
         <Card
             title="All Users"
-            loading={loading}
             className="dashboard-container"
             style={{ width: "80%", maxWidth: "900px", margin: "40px auto" }}
             extra={
@@ -144,7 +147,9 @@ const UsersList = () => {
                   })}
               />
           ) : (
-              <Spin tip="Loading users..." />
+              <div style={{ textAlign: "center", padding: "20px" }}>
+                No users found or error loading users
+              </div>
           )}
         </Card>
       </div>

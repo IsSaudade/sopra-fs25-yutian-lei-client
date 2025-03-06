@@ -1,12 +1,4 @@
-// your code here for S2 to display a single user profile after having clicked on it
-// each user has their own slug /[id] (/1, /2, /3, ...) and is displayed using this file
-// try to leverage the component library from antd by utilizing "Card" to display the individual user
-// import { Card } from "antd"; // similar to /app/users/page.tsx
-
 "use client";
-// For components that need React hooks and browser APIs,
-// SSR (server side rendering) has to be disabled.
-// Read more here: https://nextjs.org/docs/pages/building-your-application/rendering/server-side-rendering
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -30,9 +22,16 @@ export default function UserProfile() {
   const [error, setError] = useState<string | null>(null);
   const [form] = Form.useForm();
 
+  // Debug - log the userId from params and currentUserId
+  useEffect(() => {
+    console.log("UserProfile - Profile ID:", userId);
+    console.log("UserProfile - Current User ID:", currentUserId);
+  }, [userId, currentUserId]);
+
   // Check authentication
   useEffect(() => {
     if (!currentUserId) {
+      console.log("No userId found, redirecting to login");
       router.push("/login");
       return;
     }
@@ -44,40 +43,44 @@ export default function UserProfile() {
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
-      if (!currentUserId) return;
+      if (!currentUserId || !userId) return;
 
       try {
         setLoading(true);
         setError(null);
-        const data: User = await apiService.get<User>(`/users/${userId}`);
-        console.log("Fetched user data:", data);
-        setUser(data);
 
-        // Initialize form with user data
-        form.setFieldsValue({
-          username: data.username,
-          birthday: data.birthday ? dayjs(new Date(data.birthday)) : undefined,
-        });
+        console.log(`Fetching user with ID: ${userId}`);
+        const data = await apiService.get<User>(`/users/${userId}`);
+        console.log("Fetched user data:", data);
+
+        if (data) {
+          setUser(data);
+
+          // Initialize form with user data
+          form.setFieldsValue({
+            username: data.username,
+            birthday: data.birthday ? dayjs(new Date(data.birthday)) : undefined,
+          });
+        } else {
+          throw new Error("Received empty user data");
+        }
       } catch (error) {
+        console.error("Error fetching user:", error);
+
         if (error instanceof Error) {
           setError(`Failed to load user: ${error.message}`);
           message.error(`Failed to load user: ${error.message}`);
 
           // If unauthorized, redirect to login
           if (error.message.includes("401") || error.message.includes("403")) {
+            console.log("Unauthorized, redirecting to login");
             router.push("/login");
             return;
           }
         } else {
-          setError("Failed to load user profile.");
-          console.error("An unknown error occurred while fetching user.");
-          message.error("Failed to load user profile.");
+          setError("Failed to load user profile due to unknown error");
+          message.error("Failed to load user profile");
         }
-
-        // Don't redirect immediately, allow user to see the error
-        setTimeout(() => {
-          router.push("/users");
-        }, 3000);
       } finally {
         setLoading(false);
       }
@@ -128,12 +131,11 @@ export default function UserProfile() {
       // Exit edit mode
       setIsEditing(false);
     } catch (error) {
+      console.error("Error updating profile:", error);
       if (error instanceof Error) {
         message.error(`Failed to update profile: ${error.message}`);
-        console.error("Update profile error:", error);
       } else {
-        console.error("An unknown error occurred while updating profile.");
-        message.error("Failed to update profile.");
+        message.error("Failed to update profile due to unknown error");
       }
     }
   };
@@ -181,15 +183,11 @@ export default function UserProfile() {
             loading={loading}
             style={{ width: "80%", maxWidth: "600px", margin: "0 auto", background: "#2e4b99" }}
             extra={
-                user && (
-                    canEdit ? (
-                        !isEditing && (
-                            <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
-                              Edit Profile
-                            </Button>
-                        )
-                    ) : null
-                )
+              user && canEdit && !isEditing ? (
+                  <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
+                    Edit Profile
+                  </Button>
+              ) : null
             }
         >
           {error && (
