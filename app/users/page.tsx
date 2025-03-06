@@ -17,6 +17,11 @@ const columns: TableProps<User>["columns"] = [
     render: (text) => <a>{text}</a>,
   },
   {
+    title: "Name",
+    dataIndex: "name",
+    key: "name",
+  },
+  {
     title: "Status",
     dataIndex: "status",
     key: "status",
@@ -80,7 +85,11 @@ const UsersList = () => {
     };
 
     fetchUsers();
-  }, [apiService, userId]);
+  }, [apiService, userId]);// dependency apiService does not re-trigger the useEffect on every render because the hook uses memoization (check useApi.tsx in the hooks).
+  // if the dependency array is left empty, the useEffect will trigger exactly once
+  // if the dependency array is left away, the useEffect will run on every state change. Since we do a state change to users in the useEffect, this results in an infinite loop.
+  // read more here: https://react.dev/reference/react/useEffect#specifying-reactive-dependencies
+
 
   const handleLogout = () => {
     clearUserId();

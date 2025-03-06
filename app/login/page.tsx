@@ -1,12 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useApi } from "@/hooks/useApi";
+import useLocalStorage from "@/hooks/useLocalStorage";
 import Link from "next/link";
+import { User } from "@/types/user";
 import { Button, Form, Input, message, Card } from "antd";
 import { useState, useEffect } from "react";
-import useLocalStorage from "@/hooks/useLocalStorage";
-import { useApi } from "@/hooks/useApi";
-import { User } from "@/types/user";
+
+
+
 
 interface FormValues {
   username: string;
@@ -83,11 +86,19 @@ const Login = () => {
             </Form.Item>
 
             <Form.Item
+                name="name"
+                label="Name"
+                rules={[{ required: true, message: "Please input your name!" }]}
+            >
+              <Input placeholder="Enter name" />
+            </Form.Item>
+
+            <Form.Item
                 name="password"
                 label="Password"
                 rules={[{ required: true, message: "Please input your password!" }]}
             >
-              <Input.Password placeholder="Enter password" />
+              <Input placeholder="Enter password" />
             </Form.Item>
 
             <Form.Item>
