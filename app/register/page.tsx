@@ -2,72 +2,39 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, Form, Input, message, Card, Alert } from "antd";
+import { Button, Form, Input, message, Card } from "antd";
 import { useState } from "react";
-import useLocalStorage from "@/hooks/useLocalStorage";
 import { useApi } from "@/hooks/useApi";
 import { User } from "@/types/user";
-
-interface FormValues {
-    username: string;
-    name: string;
-    password: string;
-}
 
 const Register = () => {
     const router = useRouter();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const apiService = useApi();
-    const { set: setUserId } = useLocalStorage<string | null>("userId", null);
-    const { set: setToken } = useLocalStorage<string | null>("token", null);
 
-    const handleRegister = async (values: FormValues) => {
+    const handleRegister = async (values: { username: string; name: string; password: string }) => {
         setLoading(true);
-        setError(null);
 
         try {
-            console.log("Sending registration data:", values);
-
-            // Register user - POST to /users endpoint
+            // 注册用户 - POST到/users端点
             const response = await apiService.post<User>("/users", values);
-            console.log("Registration response:", response);
 
             if (response && response.id) {
-                message.success("Registration successful!");
-
-                // Store user data in localStorage - this is critical!
-                console.log("Storing user ID:", response.id);
-                setUserId(response.id);
-
+                // 存储用户信息到localStorage
+                localStorage.setItem("userId", response.id);
                 if (response.token) {
-                    console.log("Storing token:", response.token);
-                    setToken(response.token);
-                } else {
-                    console.warn("No token received from registration");
+                    localStorage.setItem("token", response.token);
                 }
 
-                // Set current user ID for future API calls
-                apiService.setCurrentUserId(response.id);
-
-                // Intentional delay to ensure localStorage is updated
-                setTimeout(() => {
-                    console.log("Navigating to users page...");
-                    router.push("/users");
-                }, 300);
+                message.success("注册成功！");
+                router.push("/users");
             } else {
-                throw new Error("Invalid response from server - missing user ID");
+                throw new Error("服务器响应无效");
             }
         } catch (error) {
-            console.error("Registration error details:", error);
-            if (error instanceof Error) {
-                setError(error.message);
-                message.error(`Registration failed: ${error.message}`);
-            } else {
-                setError("An unknown error occurred");
-                message.error("Registration failed due to an unknown error");
-            }
+            console.error("注册失败:", error);
+            message.error("注册失败: " + (error instanceof Error ? error.message : "未知错误"));
         } finally {
             setLoading(false);
         }
@@ -75,68 +42,49 @@ const Register = () => {
 
     return (
         <div className="login-container">
-            <Card title="Register" style={{ width: 400, borderRadius: "10px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
-                {error && (
-                    <Alert
-                        message="Registration Error"
-                        description={error}
-                        type="error"
-                        showIcon
-                        style={{ marginBottom: "16px" }}
-                    />
-                )}
-
+            <Card title="注册" style={{ width: 400, borderRadius: "10px" }}>
                 <Form
                     form={form}
                     name="register"
                     size="large"
-                    variant="outlined"
                     onFinish={handleRegister}
                     layout="vertical"
                 >
                     <Form.Item
                         name="username"
-                        label="Username"
-                        rules={[
-                            { required: true, message: "Please input your username!" },
-                            { min: 1, message: "Username cannot be empty" }
-                        ]}
+                        label="用户名"
+                        rules={[{ required: true, message: "请输入用户名!" }]}
                     >
-                        <Input placeholder="Enter username" />
+                        <Input placeholder="请输入用户名" />
                     </Form.Item>
 
                     <Form.Item
                         name="name"
-                        label="Name"
-                        rules={[
-                            { required: true, message: "Please input your name!" }
-                        ]}
+                        label="姓名"
+                        rules={[{ required: true, message: "请输入姓名!" }]}
                     >
-                        <Input placeholder="Enter your name" />
+                        <Input placeholder="请输入姓名" />
                     </Form.Item>
 
                     <Form.Item
                         name="password"
-                        label="Password"
-                        rules={[
-                            { required: true, message: "Please input your password!" },
-                            { min: 1, message: "Password cannot be empty" }
-                        ]}
+                        label="密码"
+                        rules={[{ required: true, message: "请输入密码!" }]}
                     >
-                        <Input.Password placeholder="Enter password" />
+                        <Input.Password placeholder="请输入密码" />
                     </Form.Item>
 
                     <Form.Item>
                         <Button type="primary" htmlType="submit" className="login-button" block loading={loading}>
-                            Register
+                            注册
                         </Button>
                     </Form.Item>
                 </Form>
 
                 <div style={{ textAlign: "center", marginTop: "20px" }}>
-                    Already have an account?{" "}
+                    已有账号？{" "}
                     <Link href="/login" style={{ color: "#75bd9d" }}>
-                        Login here
+                        点击登录
                     </Link>
                 </div>
             </Card>

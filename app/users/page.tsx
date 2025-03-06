@@ -6,32 +6,64 @@ import { useApi } from "@/hooks/useApi";
 import { User } from "@/types/user";
 import { Card, Table, Tag, message, Spin, Button } from "antd";
 import type { TableProps } from "antd";
-import useLocalStorage from "@/hooks/useLocalStorage";
 
 const UsersList = () => {
   const router = useRouter();
   const apiService = useApi();
   const [users, setUsers] = useState<User[] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
-  const { value: userId, clear: clearUserId } = useLocalStorage<string | null>("userId", null);
-  const { clear: clearToken } = useLocalStorage<string | null>("token", null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Debug - log userId from localStorage
   useEffect(() => {
-    console.log("UsersPage - userId from localStorage:", userId);
-  }, [userId]);
+    // 从localStorage获取用户ID
+    const storedUserId = localStorage.getItem("userId");
+    setUserId(storedUserId);
 
-  // Columns for the table
+    if (!storedUserId) {
+      router.push("/login");
+      return;
+    }
+
+    // 设置API服务的用户ID
+    apiService.setCurrentUserId(storedUserId);
+
+    // 获取用户列表
+    fetchUsers(storedUserId);
+  }, [apiService, router]);
+
+  const fetchUsers = async (currentUserId: string) => {
+    try {
+      const users = await apiService.get<User[]>("/users");
+      setUsers(users);
+    } catch (error) {
+      console.error("获取用户列表失败:", error);
+      message.error("获取用户列表失败");
+
+      // 如果是授权错误，重定向到登录页
+      if (error instanceof Error && (error.message.includes("401") || error.message.includes("403"))) {
+        handleLogout();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("userId");
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
+
+  // 表格列定义
   const columns: TableProps<User>["columns"] = [
     {
-      title: "Username",
+      title: "用户名",
       dataIndex: "username",
       key: "username",
       render: (text) => <a>{text}</a>,
     },
     {
-      title: "Status",
+      title: "状态",
       dataIndex: "status",
       key: "status",
       render: (status) => (
@@ -41,101 +73,28 @@ const UsersList = () => {
       ),
     },
     {
-      title: "Creation Date",
-      dataIndex: "creation_date", // Match the server's field name
+      title: "创建日期",
+      dataIndex: "creation_date",
       key: "creation_date",
       render: (date) => (
-          date ? new Date(date).toLocaleDateString() : "N/A"
+          date ? new Date(date).toLocaleDateString() : "无"
       ),
     },
   ];
 
-  // Authentication check - with better handling
-  useEffect(() => {
-    const checkAuth = () => {
-      console.log("Checking authentication...");
-
-      if (!userId) {
-        console.log("No userId found, redirecting to login");
-        router.push("/login");
-      } else {
-        console.log("User is authenticated, userId:", userId);
-        // Set current user ID for API calls
-        apiService.setCurrentUserId(userId);
-        setAuthChecked(true);
-      }
-    };
-
-    checkAuth();
-  }, [userId, router, apiService]);
-
-  // Fetch users only after auth is checked
-  useEffect(() => {
-    const fetchUsers = async () => {
-      if (!userId || !authChecked) return;
-
-      console.log("Authenticated, fetching users...");
-
-      try {
-        setLoading(true);
-
-        const data = await apiService.get<User[]>("/users");
-        console.log("Fetched users:", data);
-
-        if (Array.isArray(data)) {
-          setUsers(data);
-        } else {
-          console.error("Unexpected response format:", data);
-          message.error("Received invalid data format");
-        }
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
-
-        if (error instanceof Error) {
-          message.error(error.message);
-
-          if (error.message.includes("401") || error.message.includes("403")) {
-            handleLogout();
-          }
-        } else {
-          message.error("Unknown error occurred");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, [userId, apiService, authChecked]);
-
-  const handleLogout = () => {
-    console.log("Logging out...");
-    clearUserId();
-    clearToken();
-    apiService.setCurrentUserId(null);
-
-    console.log("Redirecting to login...");
-    router.push("/login");
-  };
-
-  // Show loading state while checking authentication
-  if (!authChecked || !userId) {
-    return (
-        <div className="card-container">
-          <Spin size="large" tip="Checking authentication..." />
-        </div>
-    );
+  if (!userId) {
+    return null;
   }
 
   return (
       <div className="card-container">
         <Card
-            title="All Users"
+            title="用户列表"
             loading={loading}
             style={{ width: "80%", maxWidth: "900px", margin: "40px auto" }}
             extra={
               <Button onClick={handleLogout} type="primary" danger>
-                Logout
+                退出登录
               </Button>
             }
         >
@@ -150,7 +109,7 @@ const UsersList = () => {
                   })}
               />
           ) : (
-              <Spin tip="Loading users..." />
+              <Spin tip="正在加载用户数据..." />
           )}
         </Card>
       </div>

@@ -2,71 +2,39 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, Form, Input, message, Card, Alert } from "antd";
+import { Button, Form, Input, message, Card } from "antd";
 import { useState } from "react";
-import useLocalStorage from "@/hooks/useLocalStorage";
 import { useApi } from "@/hooks/useApi";
 import { User } from "@/types/user";
-
-interface FormValues {
-  username: string;
-  password: string;
-}
 
 const Login = () => {
   const router = useRouter();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const apiService = useApi();
-  const { set: setUserId } = useLocalStorage<string | null>("userId", null);
-  const { set: setToken } = useLocalStorage<string | null>("token", null);
 
-  const handleLogin = async (values: FormValues) => {
+  const handleLogin = async (values: { username: string; password: string }) => {
     setLoading(true);
-    setError(null);
 
     try {
-      console.log("Sending login data:", values);
-
-      // Login user - POST to /login endpoint
+      // 登录用户 - POST到/login端点
       const response = await apiService.post<User>("/login", values);
-      console.log("Login response:", response);
 
       if (response && response.id) {
-        message.success("Login successful!");
-
-        // Store user data in localStorage - this is critical!
-        console.log("Storing user ID:", response.id);
-        setUserId(response.id);
-
+        // 存储用户信息到localStorage
+        localStorage.setItem("userId", response.id);
         if (response.token) {
-          console.log("Storing token:", response.token);
-          setToken(response.token);
-        } else {
-          console.warn("No token received from login");
+          localStorage.setItem("token", response.token);
         }
 
-        // Set current user ID for future API calls
-        apiService.setCurrentUserId(response.id);
-
-        // Intentional delay to ensure localStorage is updated
-        setTimeout(() => {
-          console.log("Navigating to users page...");
-          router.push("/users");
-        }, 300);
+        message.success("登录成功！");
+        router.push("/users");
       } else {
-        throw new Error("Invalid response from server - missing user ID");
+        throw new Error("服务器响应无效");
       }
     } catch (error) {
-      console.error("Login error details:", error);
-      if (error instanceof Error) {
-        setError(error.message);
-        message.error(`Login failed: ${error.message}`);
-      } else {
-        setError("An unknown error occurred");
-        message.error("Login failed due to an unknown error");
-      }
+      console.error("登录失败:", error);
+      message.error("登录失败: " + (error instanceof Error ? error.message : "未知错误"));
     } finally {
       setLoading(false);
     }
@@ -74,52 +42,41 @@ const Login = () => {
 
   return (
       <div className="login-container">
-        <Card title="Login" style={{ width: 400, borderRadius: "10px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
-          {error && (
-              <Alert
-                  message="Login Error"
-                  description={error}
-                  type="error"
-                  showIcon
-                  style={{ marginBottom: "16px" }}
-              />
-          )}
-
+        <Card title="登录" style={{ width: 400, borderRadius: "10px" }}>
           <Form
               form={form}
               name="login"
               size="large"
-              variant="outlined"
               onFinish={handleLogin}
               layout="vertical"
           >
             <Form.Item
                 name="username"
-                label="Username"
-                rules={[{ required: true, message: "Please input your username!" }]}
+                label="用户名"
+                rules={[{ required: true, message: "请输入用户名!" }]}
             >
-              <Input placeholder="Enter username" />
+              <Input placeholder="请输入用户名" />
             </Form.Item>
 
             <Form.Item
                 name="password"
-                label="Password"
-                rules={[{ required: true, message: "Please input your password!" }]}
+                label="密码"
+                rules={[{ required: true, message: "请输入密码!" }]}
             >
-              <Input.Password placeholder="Enter password" />
+              <Input.Password placeholder="请输入密码" />
             </Form.Item>
 
             <Form.Item>
               <Button type="primary" htmlType="submit" className="login-button" block loading={loading}>
-                Login
+                登录
               </Button>
             </Form.Item>
           </Form>
 
           <div style={{ textAlign: "center", marginTop: "20px" }}>
-            Don&apos;t have an account?{" "}
+            没有账号？{" "}
             <Link href="/register" style={{ color: "#75bd9d" }}>
-              Register here
+              点击注册
             </Link>
           </div>
         </Card>
