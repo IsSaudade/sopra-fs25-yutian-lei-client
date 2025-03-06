@@ -18,6 +18,7 @@ export class ApiService {
    * Set the current user ID for authenticated requests
    * @param userId - The ID of the current user or null to clear
    */
+  //users can only update their own profiles
   public setCurrentUserId(userId: string | null): void {
     this.currentUserId = userId;
     console.log("ApiService - setting currentUserId:", userId);
@@ -27,6 +28,7 @@ export class ApiService {
    * Get headers with optional user ID
    * @returns Headers with potential user ID
    */
+  //Provides consistent header handling across all request methods
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = { ...this.defaultHeaders };
 
@@ -144,7 +146,7 @@ export class ApiService {
       body: JSON.stringify(data),
     });
 
-    // For 204 responses, we don't need to parse the body
+    //Add special logging for debugging authentication issues
     if (res.status === 204) {
       console.log("Received 204 No Content response, returning empty object");
       return {} as T;
