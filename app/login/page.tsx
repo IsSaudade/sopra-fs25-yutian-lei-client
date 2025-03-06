@@ -1,15 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useApi } from "@/hooks/useApi";
-import useLocalStorage from "@/hooks/useLocalStorage";
 import Link from "next/link";
-import { User } from "@/types/user";
-import { Button, Form, Input, message, Card } from "antd";
+import { Button, Form, Input, message, Card, Spin } from "antd";
 import { useState, useEffect } from "react";
-
-
-
+import useLocalStorage from "@/hooks/useLocalStorage";
+import { useApi } from "@/hooks/useApi";
+import { User } from "@/types/user";
 
 interface FormValues {
   username: string;
@@ -20,38 +17,65 @@ const Login = () => {
   const router = useRouter();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const apiService = useApi();
   const { value: userId, set: setUserId } = useLocalStorage<string | null>("userId", null);
   const { set: setToken } = useLocalStorage<string | null>("token", null);
 
   // Check if user is already logged in
   useEffect(() => {
-    if (userId) {
-      router.push("/users");
-    }
+    const checkAuth = async () => {
+      setCheckingAuth(true);
+      try {
+        if (userId) {
+          console.log("User already logged in, redirecting to users page");
+          await router.push("/users");
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
   }, [userId, router]);
 
   const handleLogin = async (values: FormValues) => {
     setLoading(true);
 
     try {
+      console.log("Sending login data:", values);
+
       // Login user - POST to /login endpoint
       const response = await apiService.post<User>("/login", values);
+      console.log("Login response:", response);
 
       if (response && response.id) {
         message.success("Login successful!");
 
-        // Save user data to localStorage
-        setUserId(response.id);
-        if (response.token) {
-          setToken(response.token);
-        }
+        // Important: Set these values and wait for them to be stored
+        await Promise.all([
+          new Promise<void>(resolve => {
+            setUserId(response.id);
+            resolve();
+          }),
+          new Promise<void>(resolve => {
+            if (response.token) {
+              setToken(response.token);
+            }
+            resolve();
+          })
+        ]);
 
         // Set current user ID for future API calls
         apiService.setCurrentUserId(response.id);
 
-        // Redirect to users list page
-        router.push("/users");
+        // Add a small delay to ensure localStorage is updated
+        setTimeout(() => {
+          console.log("Redirecting to users page with userId:", response.id);
+          router.push("/users");
+        }, 500);
       } else {
         throw new Error("Invalid response from server");
       }
@@ -65,6 +89,14 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+        <div className="login-container">
+          <Spin size="large" tip="Checking authentication..." />
+        </div>
+    );
+  }
 
   return (
       <div className="login-container">

@@ -28,8 +28,8 @@ const columns: TableProps<User>["columns"] = [
   },
   {
     title: "Creation Date",
-    dataIndex: "creation_date",
-    key: "creation_date",
+    dataIndex: "creationDate",
+    key: "creationDate",
     render: (date) => (
         date ? new Date(date).toLocaleDateString() : "N/A"
     ),
@@ -41,25 +41,37 @@ const UsersList = () => {
   const apiService = useApi();
   const [users, setUsers] = useState<User[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const { value: userId, clear: clearUserId } = useLocalStorage<string | null>("userId", null);
   const { clear: clearToken } = useLocalStorage<string | null>("token", null);
 
-  // Check authentication
+  // Check authentication - with better handling to prevent redirect loops
   useEffect(() => {
-    if (!userId) {
-      router.push("/login");
-    } else {
+    const checkAuth = async () => {
+      setCheckingAuth(true);
+
+      if (!userId) {
+        console.log("No userId found, redirecting to login");
+        await router.push("/login");
+        return;
+      }
+
       // Set current user ID for API calls
       apiService.setCurrentUserId(userId);
-    }
+      setCheckingAuth(false);
+    };
+
+    checkAuth();
   }, [userId, router, apiService]);
 
+  // Only fetch users if authenticated
   useEffect(() => {
     const fetchUsers = async () => {
-      if (!userId) return;
+      if (!userId || checkingAuth) return;
 
       try {
         setLoading(true);
+        console.log("Fetching users with userId:", userId);
         const users: User[] = await apiService.get<User[]>("/users");
         setUsers(users);
         console.log("Fetched users:", users);
@@ -80,24 +92,34 @@ const UsersList = () => {
     };
 
     fetchUsers();
-  }, [apiService, userId]);// dependency apiService does not re-trigger the useEffect on every render because the hook uses memoization (check useApi.tsx in the hooks).
-  // if the dependency array is left empty, the useEffect will trigger exactly once
-  // if the dependency array is left away, the useEffect will run on every state change. Since we do a state change to users in the useEffect, this results in an infinite loop.
-  // read more here: https://react.dev/reference/react/useEffect#specifying-reactive-dependencies
+  }, [apiService, userId, checkingAuth]);
 
+  const handleLogout = async () => {
+    console.log("Logging out...");
 
-  const handleLogout = () => {
+    // Clear localStorage first
     clearUserId();
     clearToken();
+
+    // Clear API service state
     apiService.setCurrentUserId(null);
-    router.push("/login");
+
+    // Wait a bit to ensure state is cleared
+    setTimeout(() => {
+      router.push("/login");
+    }, 100);
   };
 
-  // Redirect to login if not authenticated
-  if (!userId) {
-    return null;
+  // Show loading state while checking auth
+  if (checkingAuth) {
+    return (
+        <div className="card-container">
+          <Spin size="large" tip="Checking authentication..." />
+        </div>
+    );
   }
 
+  // Render the users list
   return (
       <div className="card-container">
         <Card

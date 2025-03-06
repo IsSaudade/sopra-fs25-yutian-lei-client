@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, Form, Input, message, Card, Alert } from "antd";
+import { Button, Form, Input, message, Card, Alert, Spin } from "antd";
 import { useState, useEffect } from "react";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useApi } from "@/hooks/useApi";
@@ -10,6 +10,7 @@ import { User } from "@/types/user";
 
 interface FormValues {
     username: string;
+    name: string;
     password: string;
 }
 
@@ -18,15 +19,28 @@ const Register = () => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [checkingAuth, setCheckingAuth] = useState(true);
     const apiService = useApi();
     const { value: userId, set: setUserId } = useLocalStorage<string | null>("userId", null);
     const { set: setToken } = useLocalStorage<string | null>("token", null);
 
     // Check if user is already logged in
     useEffect(() => {
-        if (userId) {
-            router.push("/users");
-        }
+        const checkAuth = async () => {
+            setCheckingAuth(true);
+            try {
+                if (userId) {
+                    console.log("User already logged in, redirecting to users page");
+                    await router.push("/users");
+                }
+            } catch (error) {
+                console.error("Error checking auth:", error);
+            } finally {
+                setCheckingAuth(false);
+            }
+        };
+
+        checkAuth();
     }, [userId, router]);
 
     const handleRegister = async (values: FormValues) => {
@@ -34,23 +48,37 @@ const Register = () => {
         setError(null);
 
         try {
+            console.log("Sending registration data:", values);
+
             // Register user - POST to /users endpoint
             const response = await apiService.post<User>("/users", values);
+            console.log("Registration response:", response);
 
             if (response && response.id) {
                 message.success("Registration successful!");
 
-                // Save user data to localStorage
-                setUserId(response.id);
-                if (response.token) {
-                    setToken(response.token);
-                }
+                // Important: Set these values and wait for them to be stored
+                await Promise.all([
+                    new Promise<void>(resolve => {
+                        setUserId(response.id);
+                        resolve();
+                    }),
+                    new Promise<void>(resolve => {
+                        if (response.token) {
+                            setToken(response.token);
+                        }
+                        resolve();
+                    })
+                ]);
 
                 // Set current user ID for future API calls
                 apiService.setCurrentUserId(response.id);
 
-                // Redirect to users list page
-                router.push("/users");
+                // Add a small delay to ensure localStorage is updated
+                setTimeout(() => {
+                    console.log("Redirecting to users page with userId:", response.id);
+                    router.push("/users");
+                }, 500);
             } else {
                 throw new Error("Invalid response from server");
             }
@@ -66,6 +94,14 @@ const Register = () => {
             setLoading(false);
         }
     };
+
+    if (checkingAuth) {
+        return (
+            <div className="login-container">
+                <Spin size="large" tip="Checking authentication..." />
+            </div>
+        );
+    }
 
     return (
         <div className="login-container">
@@ -101,13 +137,12 @@ const Register = () => {
 
                     <Form.Item
                         name="name"
-                        label="name"
+                        label="Name"
                         rules={[
-                            { required: true, message: "Please input your name!" },
-                            { min: 1, message: "Name cannot be empty" }
+                            { required: true, message: "Please input your name!" }
                         ]}
                     >
-                        <Input placeholder="Enter username" />
+                        <Input placeholder="Enter your name" />
                     </Form.Item>
 
                     <Form.Item
