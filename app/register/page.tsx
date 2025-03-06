@@ -100,6 +100,17 @@ const Register = () => {
                     </Form.Item>
 
                     <Form.Item
+                        name="name"
+                        label="name"
+                        rules={[
+                            { required: true, message: "Please input your name!" },
+                            { min: 1, message: "Name cannot be empty" }
+                        ]}
+                    >
+                        <Input placeholder="Enter username" />
+                    </Form.Item>
+
+                    <Form.Item
                         name="password"
                         label="Password"
                         rules={[
